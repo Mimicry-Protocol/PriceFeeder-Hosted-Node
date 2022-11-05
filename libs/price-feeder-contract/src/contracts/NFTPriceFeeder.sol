@@ -25,6 +25,20 @@ contract NFTPriceFeeder is UsingTellor {
   Feed[] public feeds;
   mapping(bytes32 => Feed) queryIdToFeedMap;
 
+  event FeedCreated(
+    uint256 chainId,
+    address collectionAddress,
+    uint256 metric,
+    uint256 createdAt,
+    uint256 amount
+  );
+  event FeedFunded(
+    uint256 _chainId,
+    address _collectionAddress,
+    uint256 _metric,
+    uint256 _amount
+  );
+
   constructor(address payable _tellorAddress) UsingTellor(_tellorAddress) {}
 
   function createFeed(
@@ -69,6 +83,14 @@ contract NFTPriceFeeder is UsingTellor {
       _queryData,
       _amount
     );
+
+    emit FeedCreated(
+      _chainId,
+      _collectionAddress,
+      _metric,
+      block.timestamp,
+      _amount
+    );
   }
 
   function fundFeed(
@@ -98,6 +120,8 @@ contract NFTPriceFeeder is UsingTellor {
     );
 
     tellor.fundFeed(_feedId, _queryId, _amount);
+
+    emit FeedFunded(_chainId, _collectionAddress, _metric, _amount);
   }
 
   function getSpotPrice(
