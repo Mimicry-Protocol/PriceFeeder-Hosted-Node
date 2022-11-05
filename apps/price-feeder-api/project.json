@@ -12,8 +12,7 @@
         "compiler": "tsc",
         "outputPath": "dist/apps/price-feeder-api",
         "main": "apps/price-feeder-api/src/main.ts",
-        "tsConfig": "apps/price-feeder-api/tsconfig.app.json",
-        "assets": ["apps/price-feeder-api/src/assets"]
+        "tsConfig": "apps/price-feeder-api/tsconfig.app.json"
       },
       "configurations": {
         "production": {
@@ -38,6 +37,20 @@
         "production": {
           "buildTarget": "price-feeder-api:build:production"
         }
+      }
+    },
+    "compose-up": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker-compose -f ./docker-compose.yml up",
+        "cwd": "apps/price-feeder-api"
+      }
+    },
+    "compose-down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker-compose -f ./docker-compose.yml down",
+        "cwd": "apps/price-feeder-api"
       }
     },
     "lint": {
