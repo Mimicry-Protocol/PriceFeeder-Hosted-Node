@@ -1,0 +1,61 @@
+:root {
+  // Colors
+  --color-primary-900: #82e1af;
+  --color-primary-700: #9ff1c6;
+  --color-primary-500: #c9ffe3;
+  --color-primary-300: #e4fff1;
+  --color-primary-100: #edfff6;
+  --color-secondary-900: #ffa676;
+  --color-secondary-700: #fbb792;
+  --color-secondary-500: #ffcfb5;
+  --color-secondary-300: #ffdfce;
+  --color-secondary-100: #ffece1;
+  --color-accent-900: #e795ca;
+  --color-accent-700: #f8adde;
+  --color-accent-500: #ffc2ea;
+  --color-accent-300: #ffd6f1;
+  --color-accent-100: #ffebf8;
+  --color-neutral-900: #000000;
+  --color-neutral-700: #5f5f5f;
+  --color-neutral-500: #808080;
+  --color-neutral-300: #b4b4b4;
+  --color-neutral-200: #dadada;
+  --color-neutral-100: #f1f1f1;
+  --color-profit: #72c53c;
+  --color-loss: #f75b5b;
+  --color-stroke: var(--color-neutral-900);
+  --color-outline: #2196f3;
+  --color-checkbox-checked: #c8ffe2;
+  --color-link: #8247e5;
+  // Typography
+  --font-family: 'Space Grotesk', sans-serif;
+  --font-size-heading-l: 2rem;
+  --font-size-heading-m: 1.5rem;
+  --font-size-heading-s: 1.1875rem;
+  --font-size-body-l: 1.5rem; // 24px
+  --font-size-body-m: 1.0625rem; // 17px
+  --font-size-body-s: 0.9375rem; // 15px
+  --font-size-body-xs: 0.75rem; // 12px
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  // Spacing
+  --spacing-0: 0rem;
+  --spacing-0\.5: 0.25rem;
+  --spacing-1: 0.5rem;
+  --spacing-1\.5: 0.75rem;
+  --spacing-2: 1rem;
+  --spacing-3: 1.5rem;
+  --spacing-4: 2rem;
+  --spacing-5: 2.5rem;
+  --spacing-6: 3rem;
+  --spacing-7: 3.5rem;
+  --spacing-8: 4rem;
+  --spacing-9: 4.5rem;
+  --spacing-10: 5rem;
+  --spacing-pill: 10000px;
+  // Border Thickness
+  --border-width-thin: 1px;
+  --border-width-regular: 2px;
+  --border-width-thick: 3px;
+}
