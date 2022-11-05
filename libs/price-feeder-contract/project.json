@@ -1,0 +1,91 @@
+{
+  "sourceRoot": "libs/price-feeder-contract/dist",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat check",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat clean",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "compile": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat compile",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "console": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat console",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat coverage",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "flatten": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat flatten",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "help": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat help",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "node": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat node",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat run",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat test",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "typechain": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat typechain",
+        "cwd": "libs/price-feeder-contract"
+      }
+    },
+    "verify": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx hardhat verify",
+        "cwd": "libs/price-feeder-contract"
+      }
+    }
+  }
+}
