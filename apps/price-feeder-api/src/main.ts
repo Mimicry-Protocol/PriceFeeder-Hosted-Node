@@ -4,7 +4,10 @@ import * as express from 'express';
 import * as dune from './utils/dune';
 import * as reservoir from './utils/reservoir';
 
-const STAT_TYPES = ['TAMI', 'MARKET_CAP'] as const;
+/**
+ * @todo: Add a param for currency
+ */
+const STAT_TYPES = ['TAMI', 'MARKET_CAP', 'FLOOR'] as const;
 
 const app = express();
 
@@ -50,6 +53,15 @@ app.get('/api/stats', async (req, res) => {
 
   if (!statType) {
     handleError(res, 400, 'Invalid stat type');
+    return;
+  }
+
+  if (statType === 'FLOOR') {
+    res.send({
+      address: address,
+      stat: statType,
+      value: await reservoir.getCollectionFloorPrice(address)
+    });
     return;
   }
 
