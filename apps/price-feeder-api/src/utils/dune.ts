@@ -2,6 +2,17 @@ import * as delay from 'delay';
 const basepath = 'https://api.dune.com/api/v1/';
 const queryId = '1528412'; // https://dune.com/queries/1528412
 
+/**
+ * Get NFT Collection Sales
+ * 
+ * @param address An NFT collection's smart contract address
+ * @param limit The number of results to return
+ * @param offset Where to start in the list of returned results
+ * @param params The fields to return (see: https://dune.com/spellbook#!/model/model.spellbook.nft_trades)
+ * @param sortDirection ASC or DESC
+ * @returns An execution ID
+ * @see https://dune.com/docs/api/api-reference/execute-query-id
+ */
 export async function getNFTCollectionSales(
     address: string, 
     limit = 50000,
@@ -25,7 +36,7 @@ export async function getNFTCollectionSales(
 }
 
 /**
- * Query Dune
+ * Query Dune for NFT Collection Sales History
  * 
  * @param address An NFT collection's smart contract address
  * @param limit The number of results to return
@@ -33,6 +44,8 @@ export async function getNFTCollectionSales(
  * @param params The fields to return (see: https://dune.com/spellbook#!/model/model.spellbook.nft_trades)
  * @param sortDirection ASC or DESC
  * @returns An execution ID
+ * @see https://dune.com/docs/api/api-reference/execute-query-id
+ * @todo Refactor this method so it accepts a queryId: number and params: object
  */
 export async function query(
         address: string, 
@@ -72,6 +85,7 @@ export async function query(
  * 
  * @param executionId A query execution ID
  * @returns True if the query is ready to return a response
+ * @see https://dune.com/docs/api/api-reference/execution-status/
  */
 export async function isQueryReady(executionId: string): Promise<boolean> {
     const response = await fetch(basepath
@@ -95,6 +109,7 @@ export async function isQueryReady(executionId: string): Promise<boolean> {
  * 
  * @param executionId A query execution ID
  * @returns A list of results
+ * @see https://dune.com/docs/api/api-reference/execution-results/
  */
 export async function getQueryResults(executionId: string): Promise<Record<string,unknown>[]> {
     const response = await fetch(basepath
@@ -109,4 +124,3 @@ export async function getQueryResults(executionId: string): Promise<Record<strin
     const json = await response.json();
     return (json.result.rows);
 }
-
