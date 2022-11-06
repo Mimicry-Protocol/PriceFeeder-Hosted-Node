@@ -22,7 +22,7 @@ async function feeder() {
 //========================
 app.get('/api/collections', async (req, res) => {
   const db = await feeder();
-  const collections = await db.collection('collections').find();
+  const collections = await db.collection('nftCollections').find();
 
   res.send({
     collections: await collections.toArray(),
