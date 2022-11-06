@@ -5,7 +5,7 @@ import { CreateFeedForm } from '../CreateFeedForm/CreateFeedForm';
 export function Hero() {
   return (
     <Box>
-      <Box as="section" bg="gray.800" color="white" py="7.5rem">
+      <Box as="section" bg="#171922" color="white" py="7.5rem">
         <Box
           maxW={{ base: 'xl', md: '5xl' }}
           mx="auto"
@@ -32,14 +32,6 @@ export function Hero() {
           <HStack justify="center">
             <CreateFeedForm />
           </HStack>
-
-          <Stack
-            justify="center"
-            direction={{ base: 'column', md: 'row' }}
-            mt="10"
-            mb="20"
-            spacing="4"
-          ></Stack>
         </Box>
       </Box>
     </Box>

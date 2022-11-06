@@ -1,9 +1,9 @@
 import {
   Box,
   Button,
-  ButtonGroup,
   Container,
   HStack,
+  Image,
   Stack,
   Text,
   useBreakpointValue,
@@ -19,8 +19,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 let hasFetched = false;
 
-function useFeeds() {
+function useFeedsData() {
   const [feeds, setFeeds] = useState<Array<any>>([]);
+  const [collections, setCollections] = useState<Array<any>>([]);
 
   const doFetch = useCallback(async () => {
     const response = await fetch(
@@ -32,7 +33,7 @@ function useFeeds() {
         },
         body: JSON.stringify({
           query: `{
-          feeds {
+          feeds(orderBy:createdAt) {
             id
             chainId
             collectionAddress
@@ -42,8 +43,27 @@ function useFeeds() {
         }),
       }
     ).then((res) => res.json());
-
     setFeeds(response.data.feeds);
+
+    const collectionsResponse = await fetch(
+      'http://localhost:3333/api/collections'
+    ).then((res) => res.json());
+
+    const collectionsMap = collectionsResponse.collections.reduce(
+      (acc, collection) => {
+        acc[collection.address] = {
+          name: collection.name,
+          image: collection.image,
+          slug: collection.slug,
+          verified: collection.openseaVerificationStatus === 'verified',
+        };
+
+        return acc;
+      },
+      {}
+    );
+
+    setCollections(collectionsMap);
 
     setTimeout(doFetch, 5000);
   }, []);
@@ -55,15 +75,15 @@ function useFeeds() {
     doFetch();
   }, [doFetch]);
 
-  return feeds;
+  return [feeds, collections];
 }
 
 export function FeedsList() {
   const isMobile = useBreakpointValue({ base: true, md: false });
 
-  const feeds = useFeeds();
+  const [feeds, collectionsMap] = useFeedsData();
 
-  console.log(feeds[0]);
+  console.log(feeds, collectionsMap);
 
   return (
     <Container py={{ base: '4', md: '8' }} px={{ base: '0', md: 8 }}>
@@ -119,17 +139,30 @@ export function FeedsList() {
                 {feeds.map((feed, i) => (
                   <Tr key={i}>
                     <Td>
-                      <HStack spacing="3">
+                      <HStack spacing="2">
+                        <Image
+                          borderRadius="full"
+                          boxSize="30px"
+                          src={collectionsMap[feed.collectionAddress]?.image}
+                          alt=""
+                          marginRight={2}
+                        />
                         <Box>
                           <Text fontWeight="medium">
-                            {feed.collectionAddress}
+                            {collectionsMap[feed.collectionAddress]?.name}
                           </Text>
                         </Box>
                       </HStack>
                     </Td>
                     <Td>
                       <Text color="muted">
-                        {feed.metric === '0' ? 'TAMI' : 'Market Cap'}
+                        {
+                          {
+                            0: 'TAMI',
+                            1: 'Market Cap',
+                            2: 'Floor Price',
+                          }[feed.metric]
+                        }
                       </Text>
                     </Td>
                     <Td>

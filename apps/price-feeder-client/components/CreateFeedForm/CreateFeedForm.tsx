@@ -222,6 +222,7 @@ export function CreateFeedForm(props: BoxProps) {
             <HStack spacing={8}>
               <Radio value="0">TAMI</Radio>
               <Radio value="1">Market Cap</Radio>
+              <Radio value="2">Floor Price</Radio>
             </HStack>
           </RadioGroup>
         </FormControl>
