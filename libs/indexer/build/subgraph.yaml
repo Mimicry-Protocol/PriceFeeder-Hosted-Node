@@ -8,6 +8,7 @@ dataSources:
     source:
       address: "0x662410dD2c11B059F9AdF0832D870A4D4e0EA999"
       abi: NFTPriceFeeder
+      startBlock: 29011903
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
