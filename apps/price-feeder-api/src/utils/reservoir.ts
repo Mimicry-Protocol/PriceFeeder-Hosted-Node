@@ -40,7 +40,6 @@ export async function getCollectionFloorPrice(
         }
         
         const json = await response.json();
-        console.log('Floor price: ' + json.price);
         return json.price;
 }
 
@@ -77,13 +76,10 @@ export async function getCollectionMetadata(
 
     const json = await response.json();
 
-    const returnData = {
+    return {
         name: json.collections[0].name,
         slug: json.collections[0].slug,
         image: json.collections[0].image,
         openseaVerificationStatus: json.collections[0].openseaVerificationStatus,
-    }
-
-    console.log(returnData);
-    return returnData;
+    };
 }
