@@ -4,6 +4,8 @@ import "usingtellor/contracts/UsingTellor.sol";
 import "usingtellor/contracts/TellorPlayground.sol";
 import "usingtellor/contracts/interface/ITellor.sol";
 
+import "hardhat/console.sol";
+
 string constant DATA_SPEC_NAME = "MimicryCollectionStat";
 
 struct FeedQuery {
@@ -238,5 +240,14 @@ contract NFTPriceFeeder is UsingTellor {
     );
     bytes32 _queryId = keccak256(_queryData);
     return (_queryData, _queryId);
+  }
+
+  function _mockWriteToPlayground(
+    bytes32 _queryId,
+    bytes calldata _value,
+    uint256 _nonce,
+    bytes memory _queryData
+  ) external {
+    playground.submitValue(_queryId, _value, _nonce, _queryData);
   }
 }
