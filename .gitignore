@@ -42,4 +42,4 @@ Thumbs.db
 .next
 
 # env
-.env.*
+.env.local
