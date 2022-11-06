@@ -1,4 +1,4 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { NavBar } from '../../components/NavBar/NavBar';
 
 type Props = {
   children: React.ReactNode;
@@ -7,7 +7,7 @@ type Props = {
 export function Main({ children }: Props) {
   return (
     <div>
-      <ConnectButton />
+      <NavBar />
       {children}
     </div>
   );
