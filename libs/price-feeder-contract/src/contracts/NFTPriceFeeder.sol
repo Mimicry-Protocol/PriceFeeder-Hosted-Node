@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "usingtellor/contracts/UsingTellor.sol";
+import "usingtellor/contracts/TellorPlayground.sol";
 import "usingtellor/contracts/interface/ITellor.sol";
-
-import "hardhat/console.sol";
 
 string constant DATA_SPEC_NAME = "MimicryCollectionStat";
 
@@ -24,6 +23,8 @@ contract NFTPriceFeeder is UsingTellor {
   FeedQuery[] public feedQueries;
 
   uint256 minCreateFeedTRBAmount = 1 ether;
+
+  TellorPlayground playground;
 
   event FeedCreated(
     uint256 chainId,
@@ -49,8 +50,11 @@ contract NFTPriceFeeder is UsingTellor {
     _;
   }
 
-  constructor(address payable _tellorAddress) UsingTellor(_tellorAddress) {
+  constructor(address payable _autopayAddress, address _playgroundAddress)
+    UsingTellor(_autopayAddress)
+  {
     owner = msg.sender;
+    playground = TellorPlayground(_playgroundAddress);
   }
 
   function setMinCreateFeedTRBAmount(uint256 _amount) external onlyOwner {
@@ -147,17 +151,15 @@ contract NFTPriceFeeder is UsingTellor {
     uint256 _timestamp;
     bytes memory _value;
 
-    (_value, _timestamp) = getDataBefore(_queryId, block.timestamp - 1 hours);
+    /// @notice This is using the playground to read values
+    (, _value, _timestamp) = playground.getDataBefore(
+      _queryId,
+      block.timestamp - 1 hours
+    );
     uint256 _decodedValue = abi.decode(_value, (uint256));
 
     return (_decodedValue, _timestamp);
   }
-
-  function getSpotPriceDetails(
-    uint256 _chainId,
-    address _collectionAddress,
-    uint256 _metric
-  ) external {}
 
   function getFeedQueries() external view returns (FeedQuery[] memory) {
     return feedQueries;
@@ -167,12 +169,14 @@ contract NFTPriceFeeder is UsingTellor {
     uint256 _chainId,
     address _collectionAddress,
     uint256 _metric
-  ) external view returns (Autopay.FeedDetails[] memory) {
+  ) public view returns (Autopay.FeedDetails[] memory) {
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
     bytes32[] memory _feedIds = tellor.getCurrentFeeds(_queryId);
     uint256 _feedsCount = _feedIds.length;
 
-    Autopay.FeedDetails[] memory _feedDetailsArray;
+    Autopay.FeedDetails[] memory _feedDetailsArray = new Autopay.FeedDetails[](
+      _feedsCount
+    );
 
     for (uint256 i = 0; i < _feedsCount; i++) {
       bytes32 _feedId = _feedIds[i];
@@ -182,7 +186,46 @@ contract NFTPriceFeeder is UsingTellor {
     return _feedDetailsArray;
   }
 
-  function getAllFeeds() external returns (Autopay.FeedDetails[] memory) {}
+  function getAllFeeds() external view returns (Autopay.FeedDetails[] memory) {
+    uint256 _feedCount = _getCountOfFeeds();
+
+    Autopay.FeedDetails[] memory _allFeeds = new Autopay.FeedDetails[](
+      _feedCount
+    );
+
+    uint256 _allFeedsIndex = 0;
+
+    for (uint256 i = 0; i < feedQueries.length; i++) {
+      Autopay.FeedDetails[] memory _feedsForQuery = getFeedsForQuery(
+        feedQueries[i].chainId,
+        feedQueries[i].collectionAddress,
+        feedQueries[i].metric
+      );
+
+      for (uint256 j = 0; j < _feedsForQuery.length; j++) {
+        _allFeeds[_allFeedsIndex] = _feedsForQuery[j];
+        _allFeedsIndex += 1;
+      }
+    }
+
+    return _allFeeds;
+  }
+
+  function _getCountOfFeeds() internal view returns (uint256) {
+    uint256 _feedCount = 0;
+
+    for (uint256 i = 0; i < feedQueries.length; i++) {
+      Autopay.FeedDetails[] memory _feeds = getFeedsForQuery(
+        feedQueries[i].chainId,
+        feedQueries[i].collectionAddress,
+        feedQueries[i].metric
+      );
+
+      _feedCount += _feeds.length;
+    }
+
+    return _feedCount;
+  }
 
   function _buildQuery(
     uint256 _chainId,
