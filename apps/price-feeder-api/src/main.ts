@@ -137,26 +137,23 @@ app.get('/api/feeds', async (req, res) => {
 //================
 app.post('/api/stats', async (req, res) => {
   try {
-    const { chainId = '1', address, stat } = req.query;
+    const { chainId = '1', address } = req.query;
+    const { "x-api-secret": secret } = req.headers;
+    
+    if (secret !== process.env.API_ACCESS_SECRET) {
+      handleError(res, 400, 'Invalid secret key');
+      return;
+    }
 
     if (
       typeof chainId !== 'string' ||
-      typeof address !== 'string' ||
-      typeof stat !== 'string'
+      typeof address !== 'string'
     ) {
       handleError(res, 400, 'Invalid query parameters');
       return;
     }
 
-    const statNumber = parseInt(stat, 10);
-    const statType = STAT_TYPES[statNumber];
-
-    if (!statType) {
-      handleError(res, 400, 'Invalid stat type');
-      return;
-    }
-
-    console.log({ chainId, address, statType });
+    console.log({ chainId, address });
     
     // Check to see if we have this collection saved in the db
     const db = await feeder();
@@ -165,7 +162,6 @@ app.post('/api/stats', async (req, res) => {
       address: address
     };
     const collection = await db.collection("nftCollections").findOne(query);
-    let done = false;
     let collectionId: ObjectId;
     
     /**
