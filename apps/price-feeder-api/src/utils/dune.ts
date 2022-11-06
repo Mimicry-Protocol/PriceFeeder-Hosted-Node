@@ -124,4 +124,3 @@ export async function getQueryResults(executionId: string): Promise<Record<strin
     const json = await response.json();
     return (json.result.rows);
 }
-
