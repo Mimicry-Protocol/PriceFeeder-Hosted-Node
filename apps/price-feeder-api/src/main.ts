@@ -1,4 +1,5 @@
-import { Collection, MongoClient, ObjectId } from 'mongodb';
+import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
+import { tami } from '@mimicry/tami';
 import * as express from 'express';
 import * as dune from './utils/dune';
 import * as reservoir from './utils/reservoir';
@@ -33,6 +34,7 @@ app.get('/api/collections', async (req, res) => {
 //========================
 app.get('/api/stats', async (req, res) => {
   const { chainId = '1', address, stat } = req.query;
+  console.log({ chainId, address, stat });
 
   if (
     typeof chainId !== 'string' ||
@@ -51,10 +53,51 @@ app.get('/api/stats', async (req, res) => {
     return;
   }
 
-  console.log({ chainId, address, statType });
+  // Check to see if we have this collection saved in the db
+  const db = await feeder();
+  const query = { 
+    chainId: chainId,
+    address: address,
+    statType: statType,
+  };
+  const collection = await db.collection("nftCollections").findOne(query);
+  if (collection === null) {
+    handleError(res, 400, 'Invalid collection');
+    return;
+  }
+
+  // Make sure we have the latest data
+  await updateNftCollectionSalesHistory(db, collection._id, address, 500);
+
+  // Get all sales from this collection
+  const sales = await db.collection('nftSales').find({
+    nftCollection_id: collection._id
+  }).toArray();
+
+  let statValue: number;
+  if (statType === 'TAMI') {
+    let cleanSales = [];
+    for (const sale of sales) {
+      cleanSales.push({
+        itemId: sale.nft_token_id,
+        timestamp: new Date(sale.block_time),
+        price: sale.usd_amount
+      });
+    }
+    statValue = tami(cleanSales);
+
+  } else if (statType === 'MARKET_CAP') {
+    // complete this
+
+  }
+
+  
+
 
   res.send({
-    stat: 'Implement this...',
+    address: address,
+    stat: statType,
+    value: statValue
   });
 });
 
@@ -99,10 +142,10 @@ app.post('/api/stats', async (req, res) => {
     const db = await feeder();
     const query = { 
       chainId: chainId,
-      address: address
+      address: address,
+      statType: statType,
     };
     const collection = await db.collection("nftCollections").findOne(query);
-    const queryLimit = 10000;
     let done = false;
     let collectionId: ObjectId;
     
@@ -128,6 +171,24 @@ app.post('/api/stats', async (req, res) => {
       collectionId = collection._id;
     }
 
+    await updateNftCollectionSalesHistory(db, collectionId, address);
+
+    res.send({
+      response: 'Collection update successful',
+    });
+  } catch (error) {
+    handleError(res, 400, error.message);
+  }
+});
+
+async function updateNftCollectionSalesHistory(
+    db: Db,
+    collectionId: ObjectId,
+    collectionAddress: string,
+    queryLimit = 10000
+  ) {
+    let done = false;
+
     while (!done) {
       // Count the existing records
       const offset = await db.collection("nftSales").countDocuments({
@@ -136,7 +197,7 @@ app.post('/api/stats', async (req, res) => {
 
       // Get a page of sales history
       const nftSales = await dune.getNFTCollectionSales(
-        address, 
+        collectionAddress, 
         queryLimit, 
         offset, 
         'block_time,nft_token_id,usd_amount,tx_hash,buyer,seller');
@@ -157,13 +218,9 @@ app.post('/api/stats', async (req, res) => {
       await db.collection("nftSales").insertMany(sales);
     }
 
-    res.send({
-      response: 'Collection update successful',
-    });
-  } catch (error) {
-    handleError(res, 400, error.message);
-  }
-});
+    return;
+}
+
 
 /*
  * Init
