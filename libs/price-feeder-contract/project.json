@@ -84,7 +84,7 @@
     "verify": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx hardhat verify",
+        "command": "npx hardhat verify 0xbb8D53Ae7b9a6F78135234b7c06b5C336Acf1404 --network mumbai \"0x8f55D884CAD66B79e1a131f6bCB0e66f4fD84d5B\" \"0x1775704809521D4D7ee65B6aFb93816af73476ec\" \"0x3251838bd813fdf6a97D32781e011cce8D225d59\"",
         "cwd": "libs/price-feeder-contract"
       }
     }

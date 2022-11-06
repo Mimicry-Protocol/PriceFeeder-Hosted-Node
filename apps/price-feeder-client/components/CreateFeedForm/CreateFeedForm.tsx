@@ -8,62 +8,105 @@ import {
   FormLabel,
   HStack,
   Image,
-  Input,
   Stack,
-  Icon,
   useColorModeValue,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  useToast,
 } from '@chakra-ui/react';
-import { FormEventHandler, useCallback, useState } from 'react';
-import { NFTPriceFeeder__factory } from '@price-feeder/price-feeder-contract';
-import { useAccount, useProvider, useSigner } from 'wagmi';
-import { useAsync } from 'react-async-hook';
+import { useCallback, useState } from 'react';
+import {
+  NFTPriceFeeder__factory,
+  ERC20__factory,
+} from '@price-feeder/price-feeder-contract';
+import { useProvider, useSigner } from 'wagmi';
 import { parseEther } from 'ethers/lib/utils';
 
 import { AsyncSelect, chakraComponents } from 'chakra-react-select';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { useIsClient } from 'usehooks-ts';
 
-function usePriceFeeder() {
+const PRICE_FEEDER_ADDRESS = '0xbb8D53Ae7b9a6F78135234b7c06b5C336Acf1404';
+const TRB_TOKEN_ADDRESS = '0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE';
+const AUTOPAY_ADDRESS = '0x1775704809521D4D7ee65B6aFb93816af73476ec';
+
+function usePriceFeederContract() {
   const provider = useProvider();
-  return NFTPriceFeeder__factory.connect(
-    '0x634de06f7bb9c05772de985e613b010b6dc2473e',
-    provider
-  );
+  return NFTPriceFeeder__factory.connect(PRICE_FEEDER_ADDRESS, provider);
+}
+
+function useTRBContract() {
+  const provider = useProvider();
+  return ERC20__factory.connect(TRB_TOKEN_ADDRESS, provider);
 }
 
 function useCreateFeedHandler() {
-  const account = useAccount();
   const signer = useSigner();
-  const feederContract = usePriceFeeder();
+  const feederContract = usePriceFeederContract();
+  const trbContract = useTRBContract();
 
-  return useCallback(
-    (collectionAddress: string, metric: number, fundingAmount: string) => {
-      const thirtyMins = 30 * 60;
+  const toast = useToast();
 
-      const args = [
-        1, // uint256 _chainId,
-        collectionAddress, // address _collectionAddress,
-        metric, // uint256 _metric,
-        parseEther('0.005'), // uint256 _trbReward,
-        parseEther('0.0005'), // uint256 _rewardIncreasePerSecond,
-        thirtyMins, // uint256 _autopayInterval,
-        50, // uint256 _priceVariabilityThreshold,
-        parseEther(fundingAmount), // uint256 _amount
-      ] as const;
+  const handler = useCallback(
+    async (
+      collectionAddress: string,
+      collectionName: string,
+      metric: number,
+      fundingAmount: string
+    ) => {
+      try {
+        const thirtyMinsInSeconds = 30 * 60;
+        const fifteenMinsInSeconds = 15 * 60;
 
-      console.log(args);
+        const parsedFundingAmount = parseEther(fundingAmount);
 
-      // feederContract.createFeed(
-      //   ...args
-      // );
+        const approveTx = await trbContract
+          .connect(signer.data)
+          .approve(PRICE_FEEDER_ADDRESS, parsedFundingAmount);
+
+        await approveTx.wait();
+
+        const createFundTx = await feederContract
+          .connect(signer.data)
+          .createFeed(
+            1, // uint256 _chainId,
+            collectionAddress, // address _collectionAddress,
+            metric, // uint256 _metric,
+            parseEther('0.005'), // uint256 _trbReward,
+            parseEther('0.0005'), // uint256 _rewardIncreasePerSecond,
+            thirtyMinsInSeconds, // uint256 _autopayInterval,
+            fifteenMinsInSeconds, // uint256 _window,
+            50, // uint256 _priceVariabilityThreshold,
+            parsedFundingAmount // uint256 _amount
+          );
+
+        await createFundTx.wait();
+        toast({
+          title: 'Feed created!',
+          description: `The ${collectionName} data feed has been created :-)`,
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (err: unknown) {
+        console.error('Something went wrong:');
+        console.error(err);
+        toast({
+          title: 'Something went wrong :-(',
+          description: 'There was an issue creating your feed',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
     },
-    []
+    [feederContract, signer.data, toast, trbContract]
   );
+
+  return { handler, loading: false, error: false };
 }
 
 type CollectionItem = {
@@ -92,18 +135,13 @@ const format = (val) => val + ' TRB';
 const parse = (val) => val.replace(/\sTRB$/, '');
 
 export function CreateFeedForm(props: BoxProps) {
-  const handler = useCreateFeedHandler();
+  const { handler, loading, error } = useCreateFeedHandler();
   const isClient = useIsClient();
 
-  const [collection, setCollection] = useState('');
+  const [collectionAddress, setCollectionAddress] = useState('');
+  const [collectionName, setCollectionName] = useState('');
   const [metric, setMetric] = useState('0');
   const [trbValue, setTrbValue] = useState('5.00');
-
-  console.log({
-    collection,
-    metric,
-    trbValue,
-  });
 
   return (
     <Box
@@ -114,101 +152,111 @@ export function CreateFeedForm(props: BoxProps) {
       maxWidth={600}
       width="100%"
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handler('0x0', 0, '10');
-          const blah = e;
-          debugger;
-        }}
+      <Stack
+        spacing="5"
+        px={{ base: '4', md: '6' }}
+        py={{ base: '5', md: '6' }}
       >
-        <Stack
-          spacing="5"
-          px={{ base: '4', md: '6' }}
-          py={{ base: '5', md: '6' }}
-        >
-          <FormControl>
-            <FormLabel>Choose Collection</FormLabel>
-            {isClient && (
-              <AsyncSelect
-                name="colors"
-                placeholder="e.g. Crypto Coven"
-                components={customComponents}
-                onChange={(selection: Record<string, unknown>) => {
-                  if (typeof selection.value !== 'string') return '';
+        <FormControl>
+          <FormLabel>Choose Collection</FormLabel>
+          {isClient && (
+            <AsyncSelect
+              name="colors"
+              placeholder="e.g. Crypto Coven"
+              components={customComponents}
+              onChange={(selection: Record<string, unknown>) => {
+                console.log(selection);
+                if (
+                  typeof selection.value !== 'string' ||
+                  typeof selection.label !== 'string'
+                ) {
+                  return;
+                }
 
-                  setCollection(selection.value ?? '');
-                }}
-                noOptionsMessage={({ inputValue }) => {
-                  if (inputValue === '') {
-                    return 'What are you looking for?';
-                  }
-                  return 'No results found';
-                }}
-                loadOptions={async (query) => {
-                  const results = await fetch(
-                    `/api/search-collections?name=${query}`
-                  ).then((res) => res.json());
-
-                  const collections =
-                    results?.collections ?? ([] as CollectionItem[]);
-
-                  return collections.map((item) => ({
-                    value: item.collectionId,
-                    label: item.name,
-                    icon: (
-                      <Image
-                        borderRadius="full"
-                        boxSize="30px"
-                        src={item.image}
-                        alt=""
-                        marginRight={2}
-                      />
-                    ),
-                  }));
-                }}
-              />
-            )}
-          </FormControl>
-          <FormControl>
-            <FormLabel>What stat would you like?</FormLabel>
-            <RadioGroup
-              value={metric}
-              onChange={(nextValue) => setMetric(nextValue)}
-            >
-              <HStack spacing={8}>
-                <Radio value="0">TAMI</Radio>
-                <Radio value="1">Market Cap</Radio>
-              </HStack>
-            </RadioGroup>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Amount to sponsor</FormLabel>
-            <NumberInput
-              value={format(trbValue)}
-              onChange={(nextValue) => {
-                setTrbValue(parse(nextValue));
+                setCollectionAddress(selection.value ?? '');
+                setCollectionName(selection.label ?? '');
               }}
-              min={1}
-              precision={2}
-              step={0.5}
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </FormControl>
-        </Stack>
-        <Divider />
-        <Flex direction="row-reverse" py="4" px={{ base: '4', md: '6' }}>
-          <Button type="submit" variant="primary">
-            Submit
-          </Button>
-        </Flex>
-      </form>
+              noOptionsMessage={({ inputValue }) => {
+                if (inputValue === '') {
+                  return 'What are you looking for?';
+                }
+                return 'No results found';
+              }}
+              loadOptions={async (query) => {
+                const results = await fetch(
+                  `/api/search-collections?name=${query}`
+                ).then((res) => res.json());
+
+                const collections =
+                  results?.collections ?? ([] as CollectionItem[]);
+
+                return collections.map((item) => ({
+                  value: item.collectionId,
+                  label: item.name,
+                  icon: (
+                    <Image
+                      borderRadius="full"
+                      boxSize="30px"
+                      src={item.image}
+                      alt=""
+                      marginRight={2}
+                    />
+                  ),
+                }));
+              }}
+            />
+          )}
+        </FormControl>
+        <FormControl>
+          <FormLabel>What stat would you like?</FormLabel>
+          <RadioGroup
+            value={metric}
+            onChange={(nextValue) => setMetric(nextValue)}
+          >
+            <HStack spacing={8}>
+              <Radio value="0">TAMI</Radio>
+              <Radio value="1">Market Cap</Radio>
+            </HStack>
+          </RadioGroup>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel>Amount to sponsor</FormLabel>
+          <NumberInput
+            value={format(trbValue)}
+            onChange={(nextValue) => {
+              setTrbValue(parse(nextValue));
+            }}
+            min={1}
+            precision={2}
+            step={0.5}
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+        </FormControl>
+      </Stack>
+      <Divider />
+      <Flex direction="row-reverse" py="4" px={{ base: '4', md: '6' }}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={!collectionAddress || loading}
+          onClick={() => {
+            handler(
+              collectionAddress,
+              collectionName,
+              parseInt(metric),
+              trbValue
+            );
+          }}
+        >
+          Submit
+        </Button>
+      </Flex>
     </Box>
   );
 }
