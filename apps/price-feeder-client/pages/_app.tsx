@@ -1,12 +1,20 @@
 import { AppProps } from 'next/app';
 import Head from 'next/head';
-import '../styles/global.scss';
+
+import { ChakraProvider } from '@chakra-ui/react';
+import { theme } from '@chakra-ui/pro-theme'; // when using npm
+import '@fontsource/inter/variable.css';
 
 // Rainbowkit
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+  darkTheme,
+} from '@rainbow-me/rainbowkit';
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
+
 import '@rainbow-me/rainbowkit/styles.css';
 
 const { chains, provider } = configureChains(
@@ -34,15 +42,17 @@ function CustomApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Welcome to price-feeder-client!</title>
+        <title>Price Feeder</title>
       </Head>
-      <WagmiConfig client={wagmiClient}>
-        <RainbowKitProvider chains={chains}>
-          <main className="app">
-            <Component {...pageProps} />
-          </main>
-        </RainbowKitProvider>
-      </WagmiConfig>
+      <ChakraProvider theme={theme}>
+        <WagmiConfig client={wagmiClient}>
+          <RainbowKitProvider chains={chains} theme={darkTheme()}>
+            <main className="app">
+              <Component {...pageProps} />
+            </main>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </ChakraProvider>
     </>
   );
 }

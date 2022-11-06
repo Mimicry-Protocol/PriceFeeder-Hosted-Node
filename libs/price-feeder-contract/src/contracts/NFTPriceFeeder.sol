@@ -1,53 +1,79 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "usingtellor/contracts/UsingTellor.sol";
+import "usingtellor/contracts/TellorPlayground.sol";
+import "usingtellor/contracts/interface/ITellor.sol";
 
 import "hardhat/console.sol";
 
 string constant DATA_SPEC_NAME = "MimicryCollectionStat";
-uint256 constant TRB_REWARD = 0.005 ether;
-uint256 constant REWARD_INCREASE_PER_SECOND = 0.0005 ether;
-uint256 constant AUTOPAY_INTERVAL = 1 hours;
-uint256 constant PRICE_VARIABILITY_THRESHOLD = 50; // 0.5%
 
-struct Feed {
+struct FeedQuery {
   uint256 chainId;
   address collectionAddress;
   uint256 metric;
-  uint256 createdAt;
 }
 
-error FeedExists();
-error FeedNotFound();
+error OnlyOwner();
+error FeedQueryNotFound();
 error MinimumTRBNotMet();
 
 contract NFTPriceFeeder is UsingTellor {
-  Feed[] public feeds;
-  mapping(bytes32 => Feed) queryIdToFeedMap;
+  address owner;
+
+  mapping(bytes32 => bool) existingQueryIdMap;
+  FeedQuery[] public feedQueries;
+
+  uint256 minCreateFeedTRBAmount = 1 ether;
+
+  TellorPlayground playground;
 
   event FeedCreated(
     uint256 chainId,
     address collectionAddress,
     uint256 metric,
+    uint256 amount,
     uint256 createdAt,
-    uint256 amount
+    address createdBy
   );
   event FeedFunded(
-    uint256 _chainId,
-    address _collectionAddress,
-    uint256 _metric,
-    uint256 _amount
+    uint256 chainId,
+    address collectionAddress,
+    uint256 metric,
+    uint256 amount,
+    uint256 fundedAt,
+    address fundedBy
   );
 
-  constructor(address payable _tellorAddress) UsingTellor(_tellorAddress) {}
+  modifier onlyOwner() {
+    if (msg.sender != owner) {
+      revert OnlyOwner();
+    }
+    _;
+  }
+
+  constructor(address payable _autopayAddress, address _playgroundAddress)
+    UsingTellor(_autopayAddress)
+  {
+    owner = msg.sender;
+    playground = TellorPlayground(_playgroundAddress);
+  }
+
+  function setMinCreateFeedTRBAmount(uint256 _amount) external onlyOwner {
+    minCreateFeedTRBAmount = _amount;
+  }
 
   function createFeed(
     uint256 _chainId,
     address _collectionAddress,
     uint256 _metric,
+    uint256 _trbReward,
+    uint256 _rewardIncreasePerSecond,
+    uint256 _autopayInterval,
+    uint256 _priceVariabilityThreshold,
     uint256 _amount
   ) external {
-    if (_amount < 50) {
+    if (_amount < minCreateFeedTRBAmount) {
       revert MinimumTRBNotMet();
     }
 
@@ -57,29 +83,27 @@ contract NFTPriceFeeder is UsingTellor {
       _metric
     );
 
-    if (queryIdToFeedMap[_queryId].createdAt == 0) {
-      revert FeedExists();
+    // If we don't have an entry for this query in the mapping, add it
+    if (existingQueryIdMap[_queryId] == false) {
+      existingQueryIdMap[_queryId] = true;
+
+      FeedQuery memory _feedQuery = FeedQuery(
+        _chainId,
+        _collectionAddress,
+        _metric
+      );
+
+      feedQueries.push(_feedQuery);
     }
-
-    Feed memory _feed = Feed(
-      _chainId,
-      _collectionAddress,
-      _metric,
-      block.timestamp
-    );
-
-    queryIdToFeedMap[_queryId] = _feed;
-
-    feeds.push(_feed);
 
     tellor.setupDataFeed(
       _queryId,
-      TRB_REWARD,
+      _trbReward,
       block.timestamp,
-      AUTOPAY_INTERVAL,
-      AUTOPAY_INTERVAL,
-      PRICE_VARIABILITY_THRESHOLD,
-      REWARD_INCREASE_PER_SECOND,
+      _autopayInterval,
+      _autopayInterval,
+      _priceVariabilityThreshold,
+      _rewardIncreasePerSecond,
       _queryData,
       _amount
     );
@@ -88,8 +112,9 @@ contract NFTPriceFeeder is UsingTellor {
       _chainId,
       _collectionAddress,
       _metric,
+      _amount,
       block.timestamp,
-      _amount
+      msg.sender
     );
   }
 
@@ -97,53 +122,111 @@ contract NFTPriceFeeder is UsingTellor {
     uint256 _chainId,
     address _collectionAddress,
     uint256 _metric,
+    bytes32 _feedId,
     uint256 _amount
   ) external {
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
 
-    Feed memory _feed = queryIdToFeedMap[_queryId];
-
-    if (_feed.createdAt == 0) {
-      revert FeedNotFound();
-    }
-
-    bytes32 _feedId = keccak256(
-      abi.encode(
-        _queryId,
-        TRB_REWARD,
-        _feed.createdAt,
-        AUTOPAY_INTERVAL,
-        AUTOPAY_INTERVAL,
-        PRICE_VARIABILITY_THRESHOLD,
-        REWARD_INCREASE_PER_SECOND
-      )
+    emit FeedFunded(
+      _chainId,
+      _collectionAddress,
+      _metric,
+      _amount,
+      block.timestamp,
+      msg.sender
     );
 
     tellor.fundFeed(_feedId, _queryId, _amount);
-
-    emit FeedFunded(_chainId, _collectionAddress, _metric, _amount);
   }
 
   function getSpotPrice(
     uint256 _chainId,
     address _collectionAddress,
     uint256 _metric
-  ) external view returns (uint256) {
+  ) external view returns (uint256, uint256) {
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
 
-    if (queryIdToFeedMap[_queryId].createdAt == 0) {
-      revert FeedNotFound();
+    if (existingQueryIdMap[_queryId] == false) {
+      revert FeedQueryNotFound();
     }
 
     uint256 _timestamp;
     bytes memory _value;
 
-    (_value, _timestamp) = getDataBefore(_queryId, block.timestamp - 1 hours);
-    return abi.decode(_value, (uint256));
+    /// @notice This is using the playground to read values
+    (, _value, _timestamp) = playground.getDataBefore(
+      _queryId,
+      block.timestamp - 1 hours
+    );
+    uint256 _decodedValue = abi.decode(_value, (uint256));
+
+    return (_decodedValue, _timestamp);
   }
 
-  function getFeeds() external view returns (Feed[] memory) {
-    return feeds;
+  function getFeedQueries() external view returns (FeedQuery[] memory) {
+    return feedQueries;
+  }
+
+  function getFeedsForQuery(
+    uint256 _chainId,
+    address _collectionAddress,
+    uint256 _metric
+  ) public view returns (Autopay.FeedDetails[] memory) {
+    (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
+    bytes32[] memory _feedIds = tellor.getCurrentFeeds(_queryId);
+    uint256 _feedsCount = _feedIds.length;
+
+    Autopay.FeedDetails[] memory _feedDetailsArray = new Autopay.FeedDetails[](
+      _feedsCount
+    );
+
+    for (uint256 i = 0; i < _feedsCount; i++) {
+      bytes32 _feedId = _feedIds[i];
+      _feedDetailsArray[i] = tellor.getDataFeed(_feedId);
+    }
+
+    return _feedDetailsArray;
+  }
+
+  function getAllFeeds() external view returns (Autopay.FeedDetails[] memory) {
+    uint256 _feedCount = _getCountOfFeeds();
+
+    Autopay.FeedDetails[] memory _allFeeds = new Autopay.FeedDetails[](
+      _feedCount
+    );
+
+    uint256 _allFeedsIndex = 0;
+
+    for (uint256 i = 0; i < feedQueries.length; i++) {
+      Autopay.FeedDetails[] memory _feedsForQuery = getFeedsForQuery(
+        feedQueries[i].chainId,
+        feedQueries[i].collectionAddress,
+        feedQueries[i].metric
+      );
+
+      for (uint256 j = 0; j < _feedsForQuery.length; j++) {
+        _allFeeds[_allFeedsIndex] = _feedsForQuery[j];
+        _allFeedsIndex += 1;
+      }
+    }
+
+    return _allFeeds;
+  }
+
+  function _getCountOfFeeds() internal view returns (uint256) {
+    uint256 _feedCount = 0;
+
+    for (uint256 i = 0; i < feedQueries.length; i++) {
+      Autopay.FeedDetails[] memory _feeds = getFeedsForQuery(
+        feedQueries[i].chainId,
+        feedQueries[i].collectionAddress,
+        feedQueries[i].metric
+      );
+
+      _feedCount += _feeds.length;
+    }
+
+    return _feedCount;
   }
 
   function _buildQuery(
@@ -157,5 +240,14 @@ contract NFTPriceFeeder is UsingTellor {
     );
     bytes32 _queryId = keccak256(_queryData);
     return (_queryData, _queryId);
+  }
+
+  function _mockWriteToPlayground(
+    bytes32 _queryId,
+    bytes calldata _value,
+    uint256 _nonce,
+    bytes memory _queryData
+  ) external {
+    playground.submitValue(_queryId, _value, _nonce, _queryData);
   }
 }
