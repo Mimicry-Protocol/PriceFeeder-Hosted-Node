@@ -30,6 +30,7 @@ contract NFTPriceFeeder is UsingTellor {
   TellorPlayground playground;
 
   event FeedCreated(
+    bytes32 feedId,
     uint256 chainId,
     address collectionAddress,
     uint256 metric,
@@ -123,7 +124,20 @@ contract NFTPriceFeeder is UsingTellor {
       _amount
     );
 
+    bytes32 _feedId = keccak256(
+      abi.encode(
+        _queryId,
+        _trbReward,
+        block.timestamp,
+        _autopayInterval,
+        _window,
+        _priceVariabilityThreshold,
+        _rewardIncreasePerSecond
+      )
+    );
+
     emit FeedCreated(
+      _feedId,
       _chainId,
       _collectionAddress,
       _metric,

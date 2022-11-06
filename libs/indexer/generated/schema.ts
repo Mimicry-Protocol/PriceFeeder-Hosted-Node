@@ -11,7 +11,7 @@ import {
   BigDecimal
 } from "@graphprotocol/graph-ts";
 
-export class ExampleEntity extends Entity {
+export class Feed extends Entity {
   constructor(id: string) {
     super();
     this.set("id", Value.fromString(id));
@@ -19,18 +19,18 @@ export class ExampleEntity extends Entity {
 
   save(): void {
     let id = this.get("id");
-    assert(id != null, "Cannot save ExampleEntity entity without an ID");
+    assert(id != null, "Cannot save Feed entity without an ID");
     if (id) {
       assert(
         id.kind == ValueKind.STRING,
-        `Entities of type ExampleEntity must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+        `Entities of type Feed must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
       );
-      store.set("ExampleEntity", id.toString(), this);
+      store.set("Feed", id.toString(), this);
     }
   }
 
-  static load(id: string): ExampleEntity | null {
-    return changetype<ExampleEntity | null>(store.get("ExampleEntity", id));
+  static load(id: string): Feed | null {
+    return changetype<Feed | null>(store.get("Feed", id));
   }
 
   get id(): string {
@@ -42,22 +42,13 @@ export class ExampleEntity extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get count(): BigInt {
-    let value = this.get("count");
-    return value!.toBigInt();
-  }
-
-  set count(value: BigInt) {
-    this.set("count", Value.fromBigInt(value));
-  }
-
-  get chainId(): BigInt {
+  get chainId(): i32 {
     let value = this.get("chainId");
-    return value!.toBigInt();
+    return value!.toI32();
   }
 
-  set chainId(value: BigInt) {
-    this.set("chainId", Value.fromBigInt(value));
+  set chainId(value: i32) {
+    this.set("chainId", Value.fromI32(value));
   }
 
   get collectionAddress(): Bytes {
@@ -67,5 +58,179 @@ export class ExampleEntity extends Entity {
 
   set collectionAddress(value: Bytes) {
     this.set("collectionAddress", Value.fromBytes(value));
+  }
+
+  get metric(): string {
+    let value = this.get("metric");
+    return value!.toString();
+  }
+
+  set metric(value: string) {
+    this.set("metric", Value.fromString(value));
+  }
+
+  get createdAt(): BigInt {
+    let value = this.get("createdAt");
+    return value!.toBigInt();
+  }
+
+  set createdAt(value: BigInt) {
+    this.set("createdAt", Value.fromBigInt(value));
+  }
+
+  get createdBy(): Bytes {
+    let value = this.get("createdBy");
+    return value!.toBytes();
+  }
+
+  set createdBy(value: Bytes) {
+    this.set("createdBy", Value.fromBytes(value));
+  }
+
+  get feeds(): Array<string> {
+    let value = this.get("feeds");
+    return value!.toStringArray();
+  }
+
+  set feeds(value: Array<string>) {
+    this.set("feeds", Value.fromStringArray(value));
+  }
+}
+
+export class FundingEventCounter extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save FundingEventCounter entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type FundingEventCounter must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("FundingEventCounter", id.toString(), this);
+    }
+  }
+
+  static load(id: string): FundingEventCounter | null {
+    return changetype<FundingEventCounter | null>(
+      store.get("FundingEventCounter", id)
+    );
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get count(): i32 {
+    let value = this.get("count");
+    return value!.toI32();
+  }
+
+  set count(value: i32) {
+    this.set("count", Value.fromI32(value));
+  }
+}
+
+export class FundingEvent extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save FundingEvent entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type FundingEvent must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("FundingEvent", id.toString(), this);
+    }
+  }
+
+  static load(id: string): FundingEvent | null {
+    return changetype<FundingEvent | null>(store.get("FundingEvent", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get chainId(): i32 {
+    let value = this.get("chainId");
+    return value!.toI32();
+  }
+
+  set chainId(value: i32) {
+    this.set("chainId", Value.fromI32(value));
+  }
+
+  get collectionAddress(): Bytes {
+    let value = this.get("collectionAddress");
+    return value!.toBytes();
+  }
+
+  set collectionAddress(value: Bytes) {
+    this.set("collectionAddress", Value.fromBytes(value));
+  }
+
+  get metric(): string {
+    let value = this.get("metric");
+    return value!.toString();
+  }
+
+  set metric(value: string) {
+    this.set("metric", Value.fromString(value));
+  }
+
+  get amount(): BigInt {
+    let value = this.get("amount");
+    return value!.toBigInt();
+  }
+
+  set amount(value: BigInt) {
+    this.set("amount", Value.fromBigInt(value));
+  }
+
+  get fundedAt(): BigInt {
+    let value = this.get("fundedAt");
+    return value!.toBigInt();
+  }
+
+  set fundedAt(value: BigInt) {
+    this.set("fundedAt", Value.fromBigInt(value));
+  }
+
+  get fundedBy(): Bytes {
+    let value = this.get("fundedBy");
+    return value!.toBytes();
+  }
+
+  set fundedBy(value: Bytes) {
+    this.set("fundedBy", Value.fromBytes(value));
+  }
+
+  get feed(): string {
+    let value = this.get("feed");
+    return value!.toString();
+  }
+
+  set feed(value: string) {
+    this.set("feed", Value.fromString(value));
   }
 }

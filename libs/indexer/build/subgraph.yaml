@@ -1,6 +1,6 @@
 specVersion: 0.0.4
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: NFTPriceFeeder
@@ -17,10 +17,10 @@ dataSources:
         - FeedFunded
       abis:
         - name: NFTPriceFeeder
-          file: ./abis/NFTPriceFeeder.json
+          file: NFTPriceFeeder/abis/NFTPriceFeeder.json
       eventHandlers:
         - event: FeedCreated(bytes32,uint256,address,uint256,uint256,uint256,address)
           handler: handleFeedCreated
         - event: FeedFunded(bytes32,uint256,address,uint256,uint256,uint256,address)
           handler: handleFeedFunded
-      file: ./src/nft-price-feeder.ts
+      file: NFTPriceFeeder/NFTPriceFeeder.wasm

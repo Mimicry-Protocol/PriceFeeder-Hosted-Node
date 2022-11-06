@@ -23,28 +23,32 @@ export class FeedCreated__Params {
     this._event = event;
   }
 
+  get feedId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
   get chainId(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
+    return this._event.parameters[1].value.toBigInt();
   }
 
   get collectionAddress(): Address {
-    return this._event.parameters[1].value.toAddress();
+    return this._event.parameters[2].value.toAddress();
   }
 
   get metric(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-
-  get amount(): BigInt {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get createdAt(): BigInt {
+  get amount(): BigInt {
     return this._event.parameters[4].value.toBigInt();
   }
 
+  get createdAt(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
+
   get createdBy(): Address {
-    return this._event.parameters[5].value.toAddress();
+    return this._event.parameters[6].value.toAddress();
   }
 }
 
@@ -61,28 +65,32 @@ export class FeedFunded__Params {
     this._event = event;
   }
 
+  get feedId(): Bytes {
+    return this._event.parameters[0].value.toBytes();
+  }
+
   get chainId(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
+    return this._event.parameters[1].value.toBigInt();
   }
 
   get collectionAddress(): Address {
-    return this._event.parameters[1].value.toAddress();
+    return this._event.parameters[2].value.toAddress();
   }
 
   get metric(): BigInt {
-    return this._event.parameters[2].value.toBigInt();
-  }
-
-  get amount(): BigInt {
     return this._event.parameters[3].value.toBigInt();
   }
 
-  get fundedAt(): BigInt {
+  get amount(): BigInt {
     return this._event.parameters[4].value.toBigInt();
   }
 
+  get fundedAt(): BigInt {
+    return this._event.parameters[5].value.toBigInt();
+  }
+
   get fundedBy(): Address {
-    return this._event.parameters[5].value.toAddress();
+    return this._event.parameters[6].value.toAddress();
   }
 }
 

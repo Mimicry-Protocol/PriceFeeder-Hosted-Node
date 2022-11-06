@@ -1,68 +1,42 @@
-import { BigInt } from "@graphprotocol/graph-ts"
 import {
-  NFTPriceFeeder,
   FeedCreated,
-  FeedFunded
-} from "../generated/NFTPriceFeeder/NFTPriceFeeder"
-import { ExampleEntity } from "../generated/schema"
+  FeedFunded,
+} from '../generated/NFTPriceFeeder/NFTPriceFeeder';
+import { Feed, FundingEvent, FundingEventCounter } from '../generated/schema';
 
 export function handleFeedCreated(event: FeedCreated): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+  let feed = Feed.load(event.params.feedId.toString());
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+  if (!feed) {
+    feed = new Feed(event.params.feedId.toString());
+    feed.chainId = event.params.chainId.toI32();
+    feed.collectionAddress = event.params.collectionAddress;
+    feed.metric = event.params.metric.toString();
+    feed.createdAt = event.params.createdAt;
+    feed.createdBy = event.params.createdBy;
   }
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
-
-  // Entity fields can be set based on event parameters
-  entity.chainId = event.params.chainId
-  entity.collectionAddress = event.params.collectionAddress
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.feedQueries(...)
-  // - contract.getAllFeeds(...)
-  // - contract.getDataAfter(...)
-  // - contract.getDataBefore(...)
-  // - contract.getFeedQueries(...)
-  // - contract.getFeedsForQuery(...)
-  // - contract.getIndexForDataAfter(...)
-  // - contract.getIndexForDataBefore(...)
-  // - contract.getMultipleValuesBefore(...)
-  // - contract.getNewValueCountbyQueryId(...)
-  // - contract.getReporterByTimestamp(...)
-  // - contract.getSpotPrice(...)
-  // - contract.getTimestampbyQueryIdandIndex(...)
-  // - contract.idMappingContract(...)
-  // - contract.isInDispute(...)
-  // - contract.retrieveData(...)
-  // - contract.tellor(...)
-  // - contract.valueFor(...)
+  feed.save();
 }
 
-export function handleFeedFunded(event: FeedFunded): void {}
+export function handleFeedFunded(event: FeedFunded): void {
+  let counter = FundingEventCounter.load('COUNTER');
+  if (!counter) {
+    counter = new FundingEventCounter('COUNTER');
+    counter.count = 0;
+  }
+
+  const fundingEvent = new FundingEvent(counter.count.toString());
+  counter.count += 1;
+  counter.save();
+
+  fundingEvent.chainId = event.params.chainId.toI32();
+  fundingEvent.collectionAddress = event.params.collectionAddress;
+  fundingEvent.metric = event.params.metric.toString();
+  fundingEvent.amount = event.params.amount;
+  fundingEvent.fundedAt = event.params.fundedAt;
+  fundingEvent.fundedBy = event.params.fundedBy;
+  fundingEvent.feed = event.params.feedId.toString();
+
+  fundingEvent.save();
+}

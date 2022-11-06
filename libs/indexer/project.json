@@ -45,7 +45,7 @@
         "command": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 dgca/price-feeder",
         "cwd": "libs/indexer"
       }
-    },
+    }
   },
   "tags": []
 }

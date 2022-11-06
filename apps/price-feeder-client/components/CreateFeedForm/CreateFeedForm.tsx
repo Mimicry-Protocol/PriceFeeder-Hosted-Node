@@ -29,9 +29,8 @@ import { AsyncSelect, chakraComponents } from 'chakra-react-select';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { useIsClient } from 'usehooks-ts';
 
-const PRICE_FEEDER_ADDRESS = '0xbb8D53Ae7b9a6F78135234b7c06b5C336Acf1404';
+const PRICE_FEEDER_ADDRESS = '0x662410dD2c11B059F9AdF0832D870A4D4e0EA999';
 const TRB_TOKEN_ADDRESS = '0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE';
-const AUTOPAY_ADDRESS = '0x1775704809521D4D7ee65B6aFb93816af73476ec';
 
 function usePriceFeederContract() {
   const provider = useProvider();

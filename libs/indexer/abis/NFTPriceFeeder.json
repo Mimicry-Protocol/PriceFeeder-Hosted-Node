@@ -29,6 +29,12 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "bytes32",
+        "name": "feedId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "chainId",
         "type": "uint256"
@@ -70,6 +76,12 @@
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "feedId",
+        "type": "bytes32"
+      },
       {
         "indexed": false,
         "internalType": "uint256",
