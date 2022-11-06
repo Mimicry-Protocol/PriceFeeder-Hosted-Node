@@ -3,8 +3,7 @@ pragma solidity ^0.8.9;
 import "usingtellor/contracts/UsingTellor.sol";
 import "usingtellor/contracts/TellorPlayground.sol";
 import "usingtellor/contracts/interface/ITellor.sol";
-
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 string constant DATA_SPEC_NAME = "MimicryCollectionStat";
 
@@ -17,6 +16,7 @@ struct FeedQuery {
 error OnlyOwner();
 error FeedQueryNotFound();
 error MinimumTRBNotMet();
+error InsufficientAllowance();
 
 contract NFTPriceFeeder is UsingTellor {
   address owner;
@@ -26,6 +26,7 @@ contract NFTPriceFeeder is UsingTellor {
 
   uint256 minCreateFeedTRBAmount = 1 ether;
 
+  ITellor autopay;
   TellorPlayground playground;
 
   event FeedCreated(
@@ -52,10 +53,13 @@ contract NFTPriceFeeder is UsingTellor {
     _;
   }
 
-  constructor(address payable _autopayAddress, address _playgroundAddress)
-    UsingTellor(_autopayAddress)
-  {
+  constructor(
+    address payable _tellorAddress,
+    address _autopayAddress,
+    address _playgroundAddress
+  ) UsingTellor(_tellorAddress) {
     owner = msg.sender;
+    autopay = ITellor(_autopayAddress);
     playground = TellorPlayground(_playgroundAddress);
   }
 
@@ -70,12 +74,22 @@ contract NFTPriceFeeder is UsingTellor {
     uint256 _trbReward,
     uint256 _rewardIncreasePerSecond,
     uint256 _autopayInterval,
+    uint256 _window,
     uint256 _priceVariabilityThreshold,
     uint256 _amount
   ) external {
     if (_amount < minCreateFeedTRBAmount) {
       revert MinimumTRBNotMet();
     }
+
+    if (
+      IERC20(autopay.token()).allowance(msg.sender, address(this)) < _amount
+    ) {
+      revert InsufficientAllowance();
+    }
+
+    IERC20(autopay.token()).transferFrom(msg.sender, address(this), _amount);
+    IERC20(autopay.token()).approve(address(autopay), _amount);
 
     (bytes memory _queryData, bytes32 _queryId) = _buildQuery(
       _chainId,
@@ -96,12 +110,12 @@ contract NFTPriceFeeder is UsingTellor {
       feedQueries.push(_feedQuery);
     }
 
-    tellor.setupDataFeed(
+    autopay.setupDataFeed(
       _queryId,
       _trbReward,
       block.timestamp,
       _autopayInterval,
-      _autopayInterval,
+      _window,
       _priceVariabilityThreshold,
       _rewardIncreasePerSecond,
       _queryData,
@@ -125,6 +139,15 @@ contract NFTPriceFeeder is UsingTellor {
     bytes32 _feedId,
     uint256 _amount
   ) external {
+    if (
+      IERC20(autopay.token()).allowance(msg.sender, address(this)) < _amount
+    ) {
+      revert InsufficientAllowance();
+    }
+
+    IERC20(autopay.token()).transferFrom(msg.sender, address(this), _amount);
+    IERC20(autopay.token()).approve(address(autopay), _amount);
+
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
 
     emit FeedFunded(
@@ -136,7 +159,7 @@ contract NFTPriceFeeder is UsingTellor {
       msg.sender
     );
 
-    tellor.fundFeed(_feedId, _queryId, _amount);
+    autopay.fundFeed(_feedId, _queryId, _amount);
   }
 
   function getSpotPrice(

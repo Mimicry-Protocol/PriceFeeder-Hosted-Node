@@ -21,11 +21,11 @@ export function Hero() {
               lineHeight="1.2"
               letterSpacing="tight"
             >
-              Feeds the price and is real nice
+              Create price feeds for any NFT collection
             </Heading>
             <Text fontSize="xl" mt="4" maxW="xl" mx="auto">
-              Are you hungry for prices? We sure are. So create one so we can
-              consume it, please.
+              Using PriceFeeder, you can choose any NFT collection and get price
+              details for that collection from data reporters.
             </Text>
           </Box>
 
