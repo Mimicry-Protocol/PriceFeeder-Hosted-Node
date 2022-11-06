@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@price-feeder/indexer": ["libs/indexer/src/index.ts"],
       "@price-feeder/price-feeder-contract": [
         "libs/price-feeder-contract/src/index.ts"
       ]

@@ -38,6 +38,7 @@ contract NFTPriceFeeder is UsingTellor {
     address createdBy
   );
   event FeedFunded(
+    bytes32 feedId,
     uint256 chainId,
     address collectionAddress,
     uint256 metric,
@@ -151,6 +152,7 @@ contract NFTPriceFeeder is UsingTellor {
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
 
     emit FeedFunded(
+      _feedId,
       _chainId,
       _collectionAddress,
       _metric,

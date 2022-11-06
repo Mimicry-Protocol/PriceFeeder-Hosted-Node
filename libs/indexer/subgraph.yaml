@@ -1,0 +1,26 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: NFTPriceFeeder
+    network: mumbai
+    source:
+      address: "0xbb8D53Ae7b9a6F78135234b7c06b5C336Acf1404"
+      abi: NFTPriceFeeder
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - FeedCreated
+        - FeedFunded
+      abis:
+        - name: NFTPriceFeeder
+          file: ./abis/NFTPriceFeeder.json
+      eventHandlers:
+        - event: FeedCreated(uint256,address,uint256,uint256,uint256,address)
+          handler: handleFeedCreated
+        - event: FeedFunded(uint256,address,uint256,uint256,uint256,address)
+          handler: handleFeedFunded
+      file: ./src/nft-price-feeder.ts

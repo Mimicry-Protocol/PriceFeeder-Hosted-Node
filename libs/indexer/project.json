@@ -1,0 +1,51 @@
+{
+  "name": "indexer",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/indexer/src",
+  "projectType": "library",
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph codegen",
+        "cwd": "libs/indexer"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph build",
+        "cwd": "libs/indexer"
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph deploy --node https://api.thegraph.com/deploy/ dgca/price-feeder",
+        "cwd": "libs/indexer"
+      }
+    },
+    "create-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph create --node http://localhost:8020/ dgca/price-feeder",
+        "cwd": "libs/indexer"
+      }
+    },
+    "remove-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph remove --node http://localhost:8020/ dgca/price-feeder",
+        "cwd": "libs/indexer"
+      }
+    },
+    "deploy-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 dgca/price-feeder",
+        "cwd": "libs/indexer"
+      }
+    },
+  },
+  "tags": []
+}
