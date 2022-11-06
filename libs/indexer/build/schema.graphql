@@ -1,13 +1,8 @@
-enum Metric {
-  TAMI
-  MARKET_CAP
-}
-
 type Feed @entity {
   id: ID!
   chainId: Int!
   collectionAddress: Bytes!
-  metric: Metric!
+  metric: String!
   createdAt: BigInt!
   createdBy: Bytes!
   feeds: [FundingEvent!]! @derivedFrom(field: "feed")
@@ -23,7 +18,7 @@ type FundingEvent @entity {
   id: ID!
   chainId: Int!
   collectionAddress: Bytes!
-  metric: Metric!
+  metric: String!
   amount: BigInt!
   fundedAt: BigInt!
   fundedBy: Bytes!
