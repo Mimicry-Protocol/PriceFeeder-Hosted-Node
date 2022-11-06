@@ -1,5 +1,6 @@
 {
-  "sourceRoot": "libs/price-feeder-contract/dist",
+  "name": "price-feeder-contract",
+  "sourceRoot": "libs/price-feeder-contract/src",
   "projectType": "library",
   "tags": [],
   "targets": {

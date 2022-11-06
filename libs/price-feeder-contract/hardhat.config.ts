@@ -10,9 +10,14 @@ const config: HardhatUserConfig = {
     root: "./src",
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.ALCHEMY_MUMBAI_URL!,
+      },
+    },
     mumbai: {
       url: process.env.ALCHEMY_MUMBAI_URL,
-      accounts: [process.env.MIMICRY_TESTNET_PK!],
+      accounts: [process.env.CONTRACT_DEPLOYER_PK!],
     },
   },
   etherscan: {
