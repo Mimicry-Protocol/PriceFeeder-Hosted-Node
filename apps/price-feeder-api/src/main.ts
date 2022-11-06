@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
+import { Db, MongoClient, ObjectId } from 'mongodb';
 import { tami } from '@mimicry/tami';
 import * as express from 'express';
 import * as dune from './utils/dune';
@@ -57,8 +57,7 @@ app.get('/api/stats', async (req, res) => {
   const db = await feeder();
   const query = { 
     chainId: chainId,
-    address: address,
-    statType: statType,
+    address: address
   };
   const collection = await db.collection("nftCollections").findOne(query);
   if (collection === null) {
@@ -72,27 +71,36 @@ app.get('/api/stats', async (req, res) => {
   // Get all sales from this collection
   const sales = await db.collection('nftSales').find({
     nftCollection_id: collection._id
-  }).toArray();
+  }).sort({ block_time: -1 }).toArray();
 
+  let cleanSales = [];
+  for (const sale of sales) {
+    cleanSales.push({
+      itemId: sale.nft_token_id,
+      timestamp: new Date(sale.block_time),
+      price: sale.usd_amount
+    });
+  }
+  
   let statValue: number;
   if (statType === 'TAMI') {
-    let cleanSales = [];
-    for (const sale of sales) {
-      cleanSales.push({
-        itemId: sale.nft_token_id,
-        timestamp: new Date(sale.block_time),
-        price: sale.usd_amount
-      });
-    }
     statValue = tami(cleanSales);
 
   } else if (statType === 'MARKET_CAP') {
-    // complete this
+    // get the latest sale price for every nft in the collection and use
+    // the lower of floor or the sale price. Then sum the total.
+    const floor = await reservoir.getCollectionFloorPrice(address); // default USD
+    
+    let items = [];
+    statValue = 0;
+    for (const sale of cleanSales) {
+      if (items[sale.itemId] === undefined) {
+        items[sale.itemId] = (sale.price > floor) ? sale.price : floor;
+        statValue += items[sale.itemId];
+      }
+    }
 
   }
-
-  
-
 
   res.send({
     address: address,
@@ -142,8 +150,7 @@ app.post('/api/stats', async (req, res) => {
     const db = await feeder();
     const query = { 
       chainId: chainId,
-      address: address,
-      statType: statType,
+      address: address
     };
     const collection = await db.collection("nftCollections").findOne(query);
     let done = false;
