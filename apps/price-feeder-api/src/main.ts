@@ -3,8 +3,7 @@ import { tami } from '@mimicry/tami';
 import * as express from 'express';
 import * as dune from './utils/dune';
 import * as reservoir from './utils/reservoir';
-
-const cors = require('cors');
+import cors = require('cors');
 
 /**
  * @todo: Add a param for currency
@@ -14,10 +13,12 @@ const STAT_TYPES = ['TAMI', 'MARKET_CAP', 'FLOOR'] as const;
 const app = express();
 app.use(cors());
 
+function getClient() {
+  return MongoClient.connect(process.env.MONGODB_URL);
+}
+
 async function feeder() {
-  const client = await MongoClient.connect(
-    'mongodb://admin:password@localhost:27017'
-  );
+  const client = await getClient();
   return client.db('feeder');
 }
 
@@ -92,14 +93,11 @@ app.get('/api/stats', async (req, res) => {
     .sort({ block_time: -1 })
     .toArray();
 
-  let cleanSales = [];
-  for (const sale of sales) {
-    cleanSales.push({
-      itemId: sale.nft_token_id,
-      timestamp: new Date(sale.block_time),
-      price: sale.usd_amount,
-    });
-  }
+  const cleanSales = sales.map((sale) => ({
+    itemId: sale.nft_token_id,
+    timestamp: new Date(sale.block_time),
+    price: sale.usd_amount,
+  }));
 
   let statValue: number;
   if (statType === 'TAMI') {
@@ -109,7 +107,7 @@ app.get('/api/stats', async (req, res) => {
     // the lower of floor or the sale price. Then sum the total.
     const floor = await reservoir.getCollectionFloorPrice(address); // default USD
 
-    let items = [];
+    const items = [];
     statValue = 0;
     for (const sale of cleanSales) {
       if (items[sale.itemId] === undefined) {
@@ -225,25 +223,22 @@ async function updateNftCollectionSalesHistory(
       break;
     }
 
-    let sales = [];
-    for (const sale of nftSales) {
-      sales.push({
-        ...sale,
-        nftCollection_id: collectionId,
-      });
-    }
+    const sales = nftSales.map((sale) => ({
+      ...sale,
+      nftCollection_id: collectionId,
+    }));
+
     await db.collection('nftSales').insertMany(sales);
   }
-
-  return;
 }
 
 /*
  * Init
  */
-const port = process.env.port || 3333;
+
+const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}/api`);
+  console.log(`Listening on port ${port}`);
 });
 server.on('error', console.error);
 

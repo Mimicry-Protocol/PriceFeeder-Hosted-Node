@@ -10,9 +10,10 @@
       "options": {
         "target": "node",
         "compiler": "tsc",
-        "outputPath": "dist/apps/price-feeder-api",
+        "outputPath": "apps/price-feeder-api/dist",
         "main": "apps/price-feeder-api/src/main.ts",
-        "tsConfig": "apps/price-feeder-api/tsconfig.app.json"
+        "tsConfig": "apps/price-feeder-api/tsconfig.app.json",
+        "generatePackageJson": true
       },
       "configurations": {
         "production": {
@@ -51,6 +52,18 @@
       "options": {
         "command": "docker-compose -f ./docker-compose.yml down",
         "cwd": "apps/price-feeder-api"
+      }
+    },
+    "fly-deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx build price-feeder-api",
+          "cp fly.toml ./dist/fly.toml",
+          "flyctl deploy ./dist"
+        ],
+        "cwd": "apps/price-feeder-api",
+        "parallel": false
       }
     },
     "lint": {
