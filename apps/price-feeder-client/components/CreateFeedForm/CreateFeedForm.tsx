@@ -90,13 +90,6 @@ function useCreateFeedHandler() {
           duration: 5000,
           isClosable: true,
         });
-
-        fetch(`http://localhost:3333/api/stats?address=${collectionAddress}`, {
-          method: 'POST',
-          headers: {
-            'x-api-secret': 'foo',
-          },
-        });
       } catch (err: unknown) {
         console.error('Something went wrong:');
         console.error(err);

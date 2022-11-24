@@ -1,9 +1,59 @@
+import delay from 'delay';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { tami } from '@mimicry/tami';
 import * as express from 'express';
 import * as dune from './utils/dune';
 import * as reservoir from './utils/reservoir';
 import cors = require('cors');
+import { Alchemy, Network, Utils } from 'alchemy-sdk';
+
+const alchemy = new Alchemy({
+  apiKey: process.env.ALCHEMY_API_KEY,
+  network: Network.MATIC_MUMBAI,
+});
+
+const feedCreatedParams = [
+  'bytes32', // feedId
+  'uint256', // chainId
+  'address', // collectionAddress
+  'uint256', // metric
+  'uint256', // amount
+  'uint256', // createdAt
+  'address', // createdBy
+];
+const feedCreatedSignature = `FeedCreated(${feedCreatedParams.join(',')})`;
+
+const AbiCoder = Utils.Interface.getAbiCoder();
+
+alchemy.ws.on(
+  {
+    address: '0x662410dD2c11B059F9AdF0832D870A4D4e0EA999',
+    topics: [Utils.id(feedCreatedSignature)],
+  },
+  (log) => {
+    const [
+      feedId,
+      chainId,
+      collectionAddress,
+      metric,
+      amount,
+      createdAt,
+      createdBy,
+    ] = AbiCoder.decode(feedCreatedParams, log.data);
+
+    console.log('FeedCreated event: ', {
+      feedId,
+      chainId,
+      collectionAddress,
+      metric,
+      amount,
+      createdAt,
+      createdBy,
+    });
+
+    upsertNftCollectionStats(chainId.toString(), collectionAddress);
+  }
+);
 
 /**
  * @todo: Add a param for currency
@@ -12,9 +62,15 @@ const STAT_TYPES = ['TAMI', 'MARKET_CAP', 'FLOOR'] as const;
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
-function getClient() {
-  return MongoClient.connect(process.env.MONGODB_URL);
+let client;
+
+async function getClient() {
+  if (!client) {
+    client = await MongoClient.connect(process.env.MONGODB_URL);
+  }
+  return client;
 }
 
 async function feeder() {
@@ -136,6 +192,48 @@ app.get('/api/feeds', async (req, res) => {
  * POST
  */
 
+app.post('/api/alchemy-webhook', async (req, res) => {
+  console.log('webhook called');
+  res.status(200).send({ message: 'ok' });
+});
+
+// Backfill any missing feeds that exist on-chain but are not in the DB
+//================
+app.post('/api/backfill', async (req, res) => {
+  const { 'x-api-secret': secret } = req.headers;
+  const { chainId = '1', collections } = req.body;
+
+  if (secret !== process.env.API_ACCESS_SECRET) {
+    handleError(res, 400, 'Invalid secret key');
+    return;
+  }
+
+  console.log(
+    `Backfilling the following collections for chain id: ${chainId}: `,
+    JSON.stringify(collections, null, 2)
+  );
+
+  if (
+    typeof chainId !== 'string' ||
+    !Array.isArray(collections) ||
+    !collections.every((item) => typeof item === 'string')
+  ) {
+    handleError(res, 400, 'Invalid request body');
+    return;
+  }
+
+  try {
+    for (const address of collections) {
+      await upsertNftCollectionStats(chainId, address);
+    }
+    res.send({
+      response: 'Collection backfill successful',
+    });
+  } catch (error) {
+    handleError(res, 400, error.message);
+  }
+});
+
 // Create new stats feed
 //================
 app.post('/api/stats', async (req, res) => {
@@ -153,39 +251,7 @@ app.post('/api/stats', async (req, res) => {
       return;
     }
 
-    console.log({ chainId, address });
-
-    // Check to see if we have this collection saved in the db
-    const db = await feeder();
-    const query = {
-      chainId: chainId,
-      address: address,
-    };
-    const collection = await db.collection('nftCollections').findOne(query);
-    let collectionId: ObjectId;
-
-    /**
-     * @todo: Add a status flag that lets us know the collection is waiting
-     * on sales history so there is no need to create a duplicate record. Don't
-     * do this until we improve the types in the dune util to support strict
-     * typed return params. e.g. block_time,nft_token_id,usd_amount.
-     */
-    if (collection === null) {
-      // no collection found... let's create one
-      const metadata = await reservoir.getCollectionMetadata(address);
-      const newCollection = await db.collection('nftCollections').insertOne({
-        ...query,
-        ...metadata,
-        createdAt: new Date(),
-      });
-      collectionId = newCollection.insertedId;
-      db.collection('nftSales').createIndex({ nftCollection_id: 1 });
-    } else {
-      // found the collection...
-      collectionId = collection._id;
-    }
-
-    await updateNftCollectionSalesHistory(db, collectionId, address);
+    await upsertNftCollectionStats(chainId, address);
 
     res.send({
       response: 'Collection update successful',
@@ -194,6 +260,43 @@ app.post('/api/stats', async (req, res) => {
     handleError(res, 400, error.message);
   }
 });
+
+async function upsertNftCollectionStats(chainId = '1', address: string) {
+  const formattedAddress = address.toLowerCase();
+  console.log('Upserting: ', { chainId, address: formattedAddress });
+
+  // Check to see if we have this collection saved in the db
+  const db = await feeder();
+  const query = {
+    chainId: chainId,
+    address: formattedAddress,
+  };
+  const collection = await db.collection('nftCollections').findOne(query);
+  let collectionId: ObjectId;
+
+  /**
+   * @todo: Add a status flag that lets us know the collection is waiting
+   * on sales history so there is no need to create a duplicate record. Don't
+   * do this until we improve the types in the dune util to support strict
+   * typed return params. e.g. block_time,nft_token_id,usd_amount.
+   */
+  if (collection === null) {
+    // no collection found... let's create one
+    const metadata = await reservoir.getCollectionMetadata(formattedAddress);
+    const newCollection = await db.collection('nftCollections').insertOne({
+      ...query,
+      ...metadata,
+      createdAt: new Date(),
+    });
+    collectionId = newCollection.insertedId;
+    db.collection('nftSales').createIndex({ nftCollection_id: 1 });
+  } else {
+    // found the collection...
+    collectionId = collection._id;
+  }
+
+  return updateNftCollectionSalesHistory(db, collectionId, formattedAddress);
+}
 
 async function updateNftCollectionSalesHistory(
   db: Db,
@@ -217,6 +320,9 @@ async function updateNftCollectionSalesHistory(
       'block_time,nft_token_id,usd_amount,tx_hash,buyer,seller'
     );
 
+    // Delay of 2 seconds after making next request to stay under Dune's API rate limit
+    await delay(3000);
+
     // Quit if there is no more sales history to page through
     if (nftSales.length === 0) {
       done = true;
@@ -230,6 +336,8 @@ async function updateNftCollectionSalesHistory(
 
     await db.collection('nftSales').insertMany(sales);
   }
+
+  console.log('Update complete: ', collectionAddress);
 }
 
 /*

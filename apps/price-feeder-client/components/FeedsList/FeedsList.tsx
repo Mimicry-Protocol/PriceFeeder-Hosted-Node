@@ -14,7 +14,9 @@ import {
   Th,
   Thead,
   Tr,
+  Icon,
 } from '@chakra-ui/react';
+import { BiLink } from 'react-icons/bi';
 import { useCallback, useEffect, useState } from 'react';
 
 let hasFetched = false;
@@ -46,8 +48,10 @@ function useFeedsData() {
     setFeeds(response.data.feeds);
 
     const collectionsResponse = await fetch(
-      'http://localhost:3333/api/collections'
+      'http://localhost:3000/api/collections'
     ).then((res) => res.json());
+
+    console.log({ collectionsResponse });
 
     const collectionsMap = collectionsResponse.collections.reduce(
       (acc, collection) => {
@@ -129,11 +133,7 @@ export function FeedsList() {
                     <Td>
                       <Text color="muted">0xYeEd1n0</Text>
                     </Td>
-                    <Td>
-                      <HStack spacing="1" justify="flex-end">
-                        <Button>Sponsor</Button>
-                      </HStack>
-                    </Td>
+                    <Td></Td>
                   </Tr>
                 )}
                 {feeds.map((feed, i) => (
@@ -170,7 +170,17 @@ export function FeedsList() {
                     </Td>
                     <Td>
                       <HStack spacing="1" justify="flex-end">
-                        <Button>Sponsor</Button>
+                        {collectionsMap[feed.collectionAddress]?.slug && (
+                          <Button
+                            as="a"
+                            target="_blank"
+                            href={`https://opensea.io/collection/${
+                              collectionsMap[feed.collectionAddress]?.slug
+                            }`}
+                          >
+                            <Icon as={BiLink} />
+                          </Button>
+                        )}
                       </HStack>
                     </Td>
                   </Tr>

@@ -1,4 +1,4 @@
-import * as delay from 'delay';
+import delay from 'delay';
 
 const basepath = 'https://api.dune.com/api/v1/';
 const queryId = '1528412'; // https://dune.com/queries/1528412
@@ -26,7 +26,7 @@ export async function getNFTCollectionSales(
   do {
     const isReady = await isQueryReady(id);
     if (isReady === false) {
-      await delay(2000);
+      await delay(3000);
     } else {
       ready = true;
     }

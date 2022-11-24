@@ -1,4 +1,4 @@
-import { Box, Stack } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { FeedsList } from '../components/FeedsList/FeedsList';
 import { Hero } from '../components/Hero/Hero';
 import { Main } from '../layouts/Main/Main';
