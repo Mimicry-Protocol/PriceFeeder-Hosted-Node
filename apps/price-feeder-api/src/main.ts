@@ -192,11 +192,6 @@ app.get('/api/feeds', async (req, res) => {
  * POST
  */
 
-app.post('/api/alchemy-webhook', async (req, res) => {
-  console.log('webhook called');
-  res.status(200).send({ message: 'ok' });
-});
-
 // Backfill any missing feeds that exist on-chain but are not in the DB
 //================
 app.post('/api/backfill', async (req, res) => {

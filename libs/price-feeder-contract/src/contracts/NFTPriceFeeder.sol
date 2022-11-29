@@ -13,6 +13,11 @@ struct FeedQuery {
   uint256 metric;
 }
 
+struct FeedQueryWithFeeds {
+  FeedQuery query;
+  Autopay.FeedDetails[] feeds;
+}
+
 error OnlyOwner();
 error FeedQueryNotFound();
 error MinimumTRBNotMet();
@@ -112,18 +117,6 @@ contract NFTPriceFeeder is UsingTellor {
       feedQueries.push(_feedQuery);
     }
 
-    autopay.setupDataFeed(
-      _queryId,
-      _trbReward,
-      block.timestamp,
-      _autopayInterval,
-      _window,
-      _priceVariabilityThreshold,
-      _rewardIncreasePerSecond,
-      _queryData,
-      _amount
-    );
-
     bytes32 _feedId = keccak256(
       abi.encode(
         _queryId,
@@ -135,6 +128,21 @@ contract NFTPriceFeeder is UsingTellor {
         _rewardIncreasePerSecond
       )
     );
+
+    // If FeedDetails.reward == 0, the feed does not exist in the Autopay contract, so we must create it.
+    if (autopay.getDataFeed(_feedId).reward == 0) {
+      autopay.setupDataFeed(
+        _queryId,
+        _trbReward,
+        block.timestamp,
+        _autopayInterval,
+        _window,
+        _priceVariabilityThreshold,
+        _rewardIncreasePerSecond,
+        _queryData,
+        _amount
+      );
+    }
 
     emit FeedCreated(
       _feedId,
@@ -212,7 +220,8 @@ contract NFTPriceFeeder is UsingTellor {
     uint256 _metric
   ) public view returns (Autopay.FeedDetails[] memory) {
     (, bytes32 _queryId) = _buildQuery(_chainId, _collectionAddress, _metric);
-    bytes32[] memory _feedIds = tellor.getCurrentFeeds(_queryId);
+
+    bytes32[] memory _feedIds = autopay.getCurrentFeeds(_queryId);
     uint256 _feedsCount = _feedIds.length;
 
     Autopay.FeedDetails[] memory _feedDetailsArray = new Autopay.FeedDetails[](
@@ -221,51 +230,37 @@ contract NFTPriceFeeder is UsingTellor {
 
     for (uint256 i = 0; i < _feedsCount; i++) {
       bytes32 _feedId = _feedIds[i];
-      _feedDetailsArray[i] = tellor.getDataFeed(_feedId);
+      _feedDetailsArray[i] = autopay.getDataFeed(_feedId);
     }
 
     return _feedDetailsArray;
   }
 
-  function getAllFeeds() external view returns (Autopay.FeedDetails[] memory) {
-    uint256 _feedCount = _getCountOfFeeds();
-
-    Autopay.FeedDetails[] memory _allFeeds = new Autopay.FeedDetails[](
-      _feedCount
+  function getAllQueriesWithFeeds()
+    external
+    view
+    returns (FeedQueryWithFeeds[] memory)
+  {
+    FeedQueryWithFeeds[] memory _queriesWithFeeds = new FeedQueryWithFeeds[](
+      feedQueries.length
     );
 
-    uint256 _allFeedsIndex = 0;
-
     for (uint256 i = 0; i < feedQueries.length; i++) {
+      FeedQuery memory _feedQuery = FeedQuery(
+        feedQueries[i].chainId,
+        feedQueries[i].collectionAddress,
+        feedQueries[i].metric
+      );
       Autopay.FeedDetails[] memory _feedsForQuery = getFeedsForQuery(
         feedQueries[i].chainId,
         feedQueries[i].collectionAddress,
         feedQueries[i].metric
       );
 
-      for (uint256 j = 0; j < _feedsForQuery.length; j++) {
-        _allFeeds[_allFeedsIndex] = _feedsForQuery[j];
-        _allFeedsIndex += 1;
-      }
+      _queriesWithFeeds[i] = FeedQueryWithFeeds(_feedQuery, _feedsForQuery);
     }
 
-    return _allFeeds;
-  }
-
-  function _getCountOfFeeds() internal view returns (uint256) {
-    uint256 _feedCount = 0;
-
-    for (uint256 i = 0; i < feedQueries.length; i++) {
-      Autopay.FeedDetails[] memory _feeds = getFeedsForQuery(
-        feedQueries[i].chainId,
-        feedQueries[i].collectionAddress,
-        feedQueries[i].metric
-      );
-
-      _feedCount += _feeds.length;
-    }
-
-    return _feedCount;
+    return _queriesWithFeeds;
   }
 
   function _buildQuery(
@@ -279,14 +274,5 @@ contract NFTPriceFeeder is UsingTellor {
     );
     bytes32 _queryId = keccak256(_queryData);
     return (_queryData, _queryId);
-  }
-
-  function _mockWriteToPlayground(
-    bytes32 _queryId,
-    bytes calldata _value,
-    uint256 _nonce,
-    bytes memory _queryData
-  ) external {
-    playground.submitValue(_queryId, _value, _nonce, _queryData);
   }
 }

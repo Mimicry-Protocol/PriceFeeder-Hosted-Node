@@ -17,77 +17,96 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { BiLink } from 'react-icons/bi';
-import { useCallback, useEffect, useState } from 'react';
+import { usePolling } from '../../hooks/usePolling';
 
-let hasFetched = false;
+type Feed = {
+  id: string;
+  chainId: number;
+  collectionAddress: string;
+  metric: string;
+};
 
-function useFeedsData() {
-  const [feeds, setFeeds] = useState<Array<any>>([]);
-  const [collections, setCollections] = useState<Array<any>>([]);
+type Collection = {
+  name: string;
+  image: string;
+  slug: string;
+  verified: boolean;
+};
 
-  const doFetch = useCallback(async () => {
-    const response = await fetch(
-      'https://api.thegraph.com/subgraphs/name/dgca/price-feeder',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: `{
-          feeds(orderBy:createdAt) {
-            id
-            chainId
-            collectionAddress
-            metric
-          }
-        }`,
-        }),
-      }
-    ).then((res) => res.json());
-    setFeeds(response.data.feeds);
+async function getFeedsData() {
+  const graphRequest: Promise<{
+    data: {
+      feeds: Array<Feed>;
+    };
+  }> = fetch('https://api.thegraph.com/subgraphs/name/dgca/price-feeder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: `{
+        feeds(orderBy:createdAt) {
+          id
+          chainId
+          collectionAddress
+          metric
+        }
+      }`,
+    }),
+  }).then((res) => res.json());
 
-    const collectionsResponse = await fetch(
-      'http://localhost:3000/api/collections'
-    ).then((res) => res.json());
+  const collectionsRequest: Promise<{
+    collections: Array<{
+      address: string;
+      name: string;
+      image: string;
+      slug: string;
+      openseaVerificationStatus: string;
+    }>;
+  }> = fetch(`${process.env.NEXT_PUBLIC_API_ORIGIN}/api/collections`).then(
+    (res) => res.json()
+  );
 
-    console.log({ collectionsResponse });
+  const [graphResponse, collectionsResponse] = await Promise.all([
+    graphRequest,
+    collectionsRequest,
+  ]);
 
-    const collectionsMap = collectionsResponse.collections.reduce(
-      (acc, collection) => {
-        acc[collection.address] = {
-          name: collection.name,
-          image: collection.image,
-          slug: collection.slug,
-          verified: collection.openseaVerificationStatus === 'verified',
-        };
+  const collectionsEntries = collectionsResponse.collections.map<
+    [string, Collection]
+  >((item) => [
+    item.address,
+    {
+      name: item.name,
+      image: item.image,
+      slug: item.slug,
+      verified: item.openseaVerificationStatus === 'verified',
+    },
+  ]);
 
-        return acc;
-      },
-      {}
-    );
+  const collectionsMap = Object.fromEntries(collectionsEntries);
 
-    setCollections(collectionsMap);
-
-    setTimeout(doFetch, 5000);
-  }, []);
-
-  useEffect(() => {
-    if (hasFetched) return;
-
-    hasFetched = true;
-    doFetch();
-  }, [doFetch]);
-
-  return [feeds, collections];
+  return graphResponse.data.feeds.map((item) => {
+    const address = item.collectionAddress;
+    const collectionObject =
+      address in collectionsMap ? collectionsMap[address] : undefined;
+    return {
+      image: collectionObject?.image ?? '',
+      name: collectionObject?.name ?? 'Unknown',
+      metric: {
+        0: 'TAMI',
+        1: 'Market Cap',
+        2: 'Floor Price',
+      }[item.metric],
+      address,
+      url: `https://opensea.io/collection/${collectionObject?.slug}`,
+    };
+  });
 }
 
 export function FeedsList() {
   const isMobile = useBreakpointValue({ base: true, md: false });
-
-  const [feeds, collectionsMap] = useFeedsData();
-
-  console.log(feeds, collectionsMap);
+  const feeds = usePolling(getFeedsData, 10000) ?? [];
 
   return (
     <Container py={{ base: '4', md: '8' }} px={{ base: '0', md: 8 }}>
@@ -143,41 +162,25 @@ export function FeedsList() {
                         <Image
                           borderRadius="full"
                           boxSize="30px"
-                          src={collectionsMap[feed.collectionAddress]?.image}
+                          src={feed.image}
                           alt=""
                           marginRight={2}
                         />
                         <Box>
-                          <Text fontWeight="medium">
-                            {collectionsMap[feed.collectionAddress]?.name}
-                          </Text>
+                          <Text fontWeight="medium">{feed.name}</Text>
                         </Box>
                       </HStack>
                     </Td>
                     <Td>
-                      <Text color="muted">
-                        {
-                          {
-                            0: 'TAMI',
-                            1: 'Market Cap',
-                            2: 'Floor Price',
-                          }[feed.metric]
-                        }
-                      </Text>
+                      <Text color="muted">{feed.metric}</Text>
                     </Td>
                     <Td>
-                      <Text color="muted">{feed.collectionAddress}</Text>
+                      <Text color="muted">{feed.address}</Text>
                     </Td>
                     <Td>
                       <HStack spacing="1" justify="flex-end">
-                        {collectionsMap[feed.collectionAddress]?.slug && (
-                          <Button
-                            as="a"
-                            target="_blank"
-                            href={`https://opensea.io/collection/${
-                              collectionsMap[feed.collectionAddress]?.slug
-                            }`}
-                          >
+                        {feed.url && (
+                          <Button as="a" target="_blank" href={feed.url}>
                             <Icon as={BiLink} />
                           </Button>
                         )}
