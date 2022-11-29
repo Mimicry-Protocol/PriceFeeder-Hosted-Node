@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-import "usingtellor/contracts/UsingTellor.sol";
-import "usingtellor/contracts/TellorPlayground.sol";
-import "usingtellor/contracts/interface/ITellor.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./vendor/tellor/UsingTellor.sol";
+import "./vendor/tellor/TellorPlayground.sol";
 
 string constant DATA_SPEC_NAME = "MimicryCollectionStat";
 

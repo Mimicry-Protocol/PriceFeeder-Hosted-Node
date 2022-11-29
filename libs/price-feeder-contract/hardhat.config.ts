@@ -1,3 +1,4 @@
+import "@typechain/hardhat";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
@@ -7,7 +8,9 @@ import "hardhat-abi-exporter";
 import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: {
+    compilers: [{ version: "0.8.17" }, { version: "0.8.3" }],
+  },
   paths: {
     root: "./src",
   },
@@ -19,7 +22,7 @@ const config: HardhatUserConfig = {
     },
     mumbai: {
       url: process.env.ALCHEMY_MUMBAI_URL,
-      accounts: [process.env.CONTRACT_DEPLOYER_PK!],
+      // accounts: [process.env.CONTRACT_DEPLOYER_PK!],
     },
   },
   etherscan: {
