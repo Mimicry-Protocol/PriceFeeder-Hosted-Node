@@ -2,6 +2,8 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-abi-exporter";
+
 import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
@@ -22,6 +24,11 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.POLYGONSCAN_API_KEY,
+  },
+  abiExporter: {
+    path: "../abis",
+    runOnCompile: true,
+    spacing: 2,
   },
 };
 

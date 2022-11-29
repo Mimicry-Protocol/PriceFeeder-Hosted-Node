@@ -18,6 +18,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useCallback, useState } from 'react';
+import { useAsyncCallback } from 'react-async-hook';
 import {
   NFTPriceFeeder__factory,
   ERC20__factory,
@@ -29,17 +30,20 @@ import { AsyncSelect, chakraComponents } from 'chakra-react-select';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { useIsClient } from 'usehooks-ts';
 
-const PRICE_FEEDER_ADDRESS = '0x662410dD2c11B059F9AdF0832D870A4D4e0EA999';
-const TRB_TOKEN_ADDRESS = '0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE';
-
 function usePriceFeederContract() {
   const provider = useProvider();
-  return NFTPriceFeeder__factory.connect(PRICE_FEEDER_ADDRESS, provider);
+  return NFTPriceFeeder__factory.connect(
+    process.env.NEXT_PUBLIC_PRICE_FEEDER_ADDRESS,
+    provider
+  );
 }
 
 function useTRBContract() {
   const provider = useProvider();
-  return ERC20__factory.connect(TRB_TOKEN_ADDRESS, provider);
+  return ERC20__factory.connect(
+    process.env.NEXT_PUBLIC_TRB_TOKEN_ADDRESS,
+    provider
+  );
 }
 
 function useCreateFeedHandler() {
@@ -49,7 +53,7 @@ function useCreateFeedHandler() {
 
   const toast = useToast();
 
-  const handler = useCallback(
+  return useCallback(
     async (
       collectionAddress: string,
       collectionName: string,
@@ -64,7 +68,10 @@ function useCreateFeedHandler() {
 
         const approveTx = await trbContract
           .connect(signer.data)
-          .approve(PRICE_FEEDER_ADDRESS, parsedFundingAmount);
+          .approve(
+            process.env.NEXT_PUBLIC_PRICE_FEEDER_ADDRESS,
+            parsedFundingAmount
+          );
 
         await approveTx.wait();
 
@@ -90,13 +97,6 @@ function useCreateFeedHandler() {
           duration: 5000,
           isClosable: true,
         });
-
-        fetch(`http://localhost:3333/api/stats?address=${collectionAddress}`, {
-          method: 'POST',
-          headers: {
-            'x-api-secret': 'foo',
-          },
-        });
       } catch (err: unknown) {
         console.error('Something went wrong:');
         console.error(err);
@@ -111,8 +111,6 @@ function useCreateFeedHandler() {
     },
     [feederContract, signer.data, toast, trbContract]
   );
-
-  return { handler, loading: false, error: false };
 }
 
 type CollectionItem = {
@@ -141,7 +139,9 @@ const format = (val) => val + ' TRB';
 const parse = (val) => val.replace(/\sTRB$/, '');
 
 export function CreateFeedForm(props: BoxProps) {
-  const { handler, loading, error } = useCreateFeedHandler();
+  const createFeedHandler = useCreateFeedHandler();
+  const asyncCreateFeedHandler = useAsyncCallback(createFeedHandler);
+
   const isClient = useIsClient();
 
   const [collectionAddress, setCollectionAddress] = useState('');
@@ -171,7 +171,6 @@ export function CreateFeedForm(props: BoxProps) {
               placeholder="e.g. Crypto Coven"
               components={customComponents}
               onChange={(selection: Record<string, unknown>) => {
-                console.log(selection);
                 if (
                   typeof selection.value !== 'string' ||
                   typeof selection.label !== 'string'
@@ -251,9 +250,9 @@ export function CreateFeedForm(props: BoxProps) {
         <Button
           type="submit"
           variant="primary"
-          disabled={!collectionAddress || loading}
+          disabled={!collectionAddress || asyncCreateFeedHandler.loading}
           onClick={() => {
-            handler(
+            asyncCreateFeedHandler.execute(
               collectionAddress,
               collectionName,
               parseInt(metric),
