@@ -53,7 +53,7 @@ app.get('/api', (req, res) => {
 app.get('/api/feeds', async (req, res) => {
   const { priceFeederContract } = await getContractUtils();
 
-  const feeds = null; // await priceFeederContract.getAllFeeds();
+  const feeds = await priceFeederContract.getAllQueriesWithFeeds();
 
   res.send({
     feeds: feeds,
