@@ -38,7 +38,7 @@ async function getFeedsData() {
     data: {
       feeds: Array<Feed>;
     };
-  }> = fetch('https://api.thegraph.com/subgraphs/name/dgca/price-feeder', {
+  }> = fetch(process.env.NEXT_PUBLIC_SUBGRAPH_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

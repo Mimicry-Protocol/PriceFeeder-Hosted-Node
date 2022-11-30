@@ -22,7 +22,7 @@ const config: HardhatUserConfig = {
     },
     mumbai: {
       url: process.env.ALCHEMY_MUMBAI_URL,
-      // accounts: [process.env.CONTRACT_DEPLOYER_PK!],
+      accounts: [process.env.CONTRACT_DEPLOYER_PK!],
     },
   },
   etherscan: {

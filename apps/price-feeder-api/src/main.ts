@@ -27,7 +27,7 @@ const AbiCoder = Utils.Interface.getAbiCoder();
 
 alchemy.ws.on(
   {
-    address: '0x662410dD2c11B059F9AdF0832D870A4D4e0EA999',
+    address: process.env.PRICE_FEEDER_CONTRACT_ADDRESS,
     topics: [Utils.id(feedCreatedSignature)],
   },
   (log) => {
