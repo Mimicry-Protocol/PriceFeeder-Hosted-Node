@@ -180,14 +180,6 @@ app.get('/api/stats', async (req, res) => {
   });
 });
 
-// Get available feeds
-//====================
-app.get('/api/feeds', async (req, res) => {
-  res.send({
-    feeds: [],
-  });
-});
-
 /*
  * POST
  */
