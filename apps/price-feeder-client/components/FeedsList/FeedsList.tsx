@@ -63,9 +63,7 @@ async function getFeedsData() {
       slug: string;
       openseaVerificationStatus: string;
     }>;
-  }> = fetch(`${process.env.NEXT_PUBLIC_API_ORIGIN}/api/collections`).then(
-    (res) => res.json()
-  );
+  }> = fetch('/api/collections').then((res) => res.json());
 
   const [graphResponse, collectionsResponse] = await Promise.all([
     graphRequest,
@@ -106,7 +104,7 @@ async function getFeedsData() {
 
 export function FeedsList() {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const feeds = usePolling(getFeedsData, 10000) ?? [];
+  const feeds = usePolling(getFeedsData, 30000) ?? [];
 
   return (
     <Container py={{ base: '4', md: '8' }} px={{ base: '0', md: 8 }}>

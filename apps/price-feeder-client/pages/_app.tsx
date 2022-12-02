@@ -2,7 +2,7 @@ import { AppProps } from 'next/app';
 import Head from 'next/head';
 
 import { ChakraProvider } from '@chakra-ui/react';
-import { theme } from '@chakra-ui/pro-theme'; // when using npm
+import { theme } from '@chakra-ui/pro-theme';
 import '@fontsource/inter/variable.css';
 
 // Rainbowkit
@@ -16,9 +16,15 @@ import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 
 import '@rainbow-me/rainbowkit/styles.css';
+import { useIsClient } from 'usehooks-ts';
 
 const { chains, provider } = configureChains(
-  [chain.polygonMumbai, chain.localhost],
+  [
+    chain.polygonMumbai,
+    globalThis.window?.location.hostname === 'localhost'
+      ? chain.localhost
+      : null,
+  ].filter((val) => !!val),
   [
     alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
     publicProvider(),
@@ -39,6 +45,9 @@ const wagmiClient = createClient({
 // Rainbowkit end
 
 function CustomApp({ Component, pageProps }: AppProps) {
+  const isClient = useIsClient();
+  if (!isClient) return null;
+
   return (
     <>
       <Head>

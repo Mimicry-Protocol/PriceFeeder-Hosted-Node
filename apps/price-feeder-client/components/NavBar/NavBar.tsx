@@ -3,7 +3,6 @@ import {
   Container,
   Flex,
   HStack,
-  Text,
   useColorModeValue,
 } from '@chakra-ui/react';
 import * as React from 'react';

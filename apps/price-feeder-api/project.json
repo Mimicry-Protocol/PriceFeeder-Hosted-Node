@@ -54,18 +54,6 @@
         "cwd": "apps/price-feeder-api"
       }
     },
-    "fly-deploy": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          "nx build price-feeder-api",
-          "cp fly.toml ./dist/fly.toml",
-          "flyctl deploy ./dist"
-        ],
-        "cwd": "apps/price-feeder-api",
-        "parallel": false
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],
