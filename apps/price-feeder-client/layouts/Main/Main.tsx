@@ -1,3 +1,4 @@
+import { Banner } from '../../components/Banner/Banner';
 import { NavBar } from '../../components/NavBar/NavBar';
 
 type Props = {
@@ -7,6 +8,7 @@ type Props = {
 export function Main({ children }: Props) {
   return (
     <div>
+      <Banner />
       <NavBar />
       {children}
     </div>
