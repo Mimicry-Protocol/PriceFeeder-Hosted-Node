@@ -7,14 +7,7 @@ export default function Index() {
   return (
     <Main>
       <Hero />
-      <Box
-        as="section"
-        bg="#171922"
-        py="7.5rem"
-        paddingX={20}
-        paddingTop={0}
-        paddingBottom={20}
-      >
+      <Box as="section" py="7.5rem" paddingBottom={8}>
         <FeedsList />
       </Box>
     </Main>
