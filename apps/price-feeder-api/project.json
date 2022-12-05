@@ -4,13 +4,25 @@
   "sourceRoot": "apps/price-feeder-api/src",
   "projectType": "application",
   "targets": {
+    "deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": [{ "projects": "self", "target": "build"}],
+      "options": {
+        "commands": [
+          "cp .env.prod dist/apps/price-feeder-api/",
+          "mv dist/apps/price-feeder-api/.env.prod dist/apps/price-feeder-api/.env",
+          "scp -i price-feeder-api-ec2.pem -rp dist/apps/price-feeder-api ubuntu@ec2-50-112-84-236.us-west-2.compute.amazonaws.com:/home/ubuntu/apps/price-feeder-api"
+        ],
+        "parallel": false
+      }
+    },
     "build": {
       "executor": "@nrwl/webpack:webpack",
       "outputs": ["{options.outputPath}"],
       "options": {
         "target": "node",
         "compiler": "tsc",
-        "outputPath": "apps/price-feeder-api/dist",
+        "outputPath": "dist/apps/price-feeder-api",
         "main": "apps/price-feeder-api/src/main.ts",
         "tsConfig": "apps/price-feeder-api/tsconfig.app.json",
         "generatePackageJson": true

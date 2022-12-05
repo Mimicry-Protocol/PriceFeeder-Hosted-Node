@@ -44,6 +44,8 @@ Thumbs.db
 # env
 .env
 .env.local
+.env.dev
+.env.prod
 
 # certs
 *.pem

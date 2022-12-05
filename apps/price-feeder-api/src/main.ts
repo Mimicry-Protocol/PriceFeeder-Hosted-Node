@@ -6,6 +6,9 @@ import * as dune from './utils/dune';
 import * as reservoir from './utils/reservoir';
 import cors = require('cors');
 import { Alchemy, Network, Utils } from 'alchemy-sdk';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const alchemy = new Alchemy({
   apiKey: process.env.ALCHEMY_API_KEY,
