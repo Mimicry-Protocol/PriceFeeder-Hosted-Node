@@ -18,6 +18,8 @@
     "@nrwl/next": "15.0.10",
     "@openzeppelin/contracts": "^4.7.3",
     "@rainbow-me/rainbowkit": "^0.7.4",
+    "@sentry/node": "^7.23.0",
+    "@sentry/tracing": "^7.23.0",
     "alchemy-sdk": "^2.2.3",
     "chakra-react-select": "^4.4.0",
     "core-js": "^3.6.5",

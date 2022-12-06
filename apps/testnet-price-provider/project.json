@@ -4,6 +4,27 @@
   "sourceRoot": "apps/testnet-price-provider/src",
   "projectType": "application",
   "targets": {
+    "deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": [{ "projects": "self", "target": "prepare-deployment"}],
+      "options": {
+        "commands": [
+          "scp -i price-feeder-api-ec2.pem -rp dist/apps/testnet-price-provider {args.dns}:/home/ubuntu/apps"
+        ],
+        "parallel": false
+      }
+    },
+    "prepare-deployment": {
+      "executor": "nx:run-commands",
+      "dependsOn": [{ "projects": "self", "target": "build"}],
+      "options": {
+        "commands": [
+          "cp .env.prod dist/apps/testnet-price-provider/",
+          "mv dist/apps/testnet-price-provider/.env.prod dist/apps/testnet-price-provider/.env"
+        ],
+        "parallel": false
+      }
+    },
     "build": {
       "executor": "@nrwl/webpack:webpack",
       "outputs": ["{options.outputPath}"],
@@ -12,7 +33,8 @@
         "compiler": "tsc",
         "outputPath": "dist/apps/testnet-price-provider",
         "main": "apps/testnet-price-provider/src/main.ts",
-        "tsConfig": "apps/testnet-price-provider/tsconfig.app.json"
+        "tsConfig": "apps/testnet-price-provider/tsconfig.app.json",
+        "generatePackageJson": true
       },
       "configurations": {
         "production": {
