@@ -107,17 +107,17 @@ async function monitorFeeds() {
   const { tellorPlaygroundContract, wallet } = await getContractUtils();
 
   for (const feed of testFeeds) {
-    const { value, stat } = await fetch(
-      `${process.env.PRICE_FEEDER_API_ORIGIN}/api/stats?address=${feed.address}&stat=${feed.stat}`
-    ).then((res) => res.json());
-
-    const { queryId, queryData } = buildQuery({
-      chainId: 1,
-      address: feed.address,
-      metric: feed.stat,
-    });
-
     try {
+      const { value, stat } = await fetch(
+        `${process.env.PRICE_FEEDER_API_ORIGIN}/api/stats?address=${feed.address}&stat=${feed.stat}`
+      ).then((res) => res.json());
+
+      const { queryId, queryData } = buildQuery({
+        chainId: 1,
+        address: feed.address,
+        metric: feed.stat,
+      });
+
       const tx = await tellorPlaygroundContract
         .connect(wallet)
         .submitValue(

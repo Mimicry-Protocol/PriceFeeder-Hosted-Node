@@ -11,7 +11,7 @@
         "commands": [
           "cp .env.prod dist/apps/price-feeder-api/",
           "mv dist/apps/price-feeder-api/.env.prod dist/apps/price-feeder-api/.env",
-          "scp -i price-feeder-api-ec2.pem -rp dist/apps/price-feeder-api {args.dns}:/home/ubuntu/apps/price-feeder-api"
+          "scp -i price-feeder-api-ec2.pem -rp dist/apps/price-feeder-api {args.dns}:/home/ubuntu/apps"
         ],
         "parallel": false
       }
